@@ -1,0 +1,161 @@
+# 🎮 PlaySync
+
+[![Java](https://img.shields.io/badge/Java-17-blue)](https://www.java.com/)
+[![Spring Boot](https://img.shields.io/badge/SpringBoot-3.2-green)](https://spring.io/projects/spring-boot)
+[![React](https://img.shields.io/badge/React-18-blue)](https://reactjs.org/)
+[![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3.3-teal)](https://tailwindcss.com/)
+[![MySQL](https://img.shields.io/badge/MySQL-8.0-orange)](https://www.mysql.com/)
+
+Aplicação fullstack para buscar jogos na **Steam**, armazenar informações no **MySQL** e exibir dados em uma interface moderna com **React + TailwindCSS**.
+
+---
+
+## 🏗️ Tecnologias Utilizadas
+
+### Backend
+- Java 17+
+- Spring Boot 3.x
+- Spring WebFlux (WebClient)
+- Spring Data JPA
+- MySQL com PL/SQL
+- Jackson para desserialização JSON
+- Maven ou Gradle
+
+### Frontend
+- React 18+
+- TailwindCSS
+- Consome endpoints REST do backend
+
+---
+
+## 🔹 Estrutura do Backend
+
+
+com.playsync
+│
+├── config → Beans do Spring (WebClient, Datasource, etc.)
+├── controller → Endpoints REST (ex: SteamController)
+├── client → Classes para consumir APIs externas (SteamClient)
+├── service → Lógica de negócio (combina dados, aplica regras)
+├── dto → DTOs que mapeiam JSON das APIs da Steam
+└── model → Entidades JPA para banco MySQL
+
+
+### Camadas importantes
+- **SteamClient**: consome APIs externas da Steam (`storesearch` e `appdetails`) usando `WebClient` e retorna `Mono<DTO>`.
+- **SteamService**: aplica regras de negócio, combina DTOs e transforma `Mono` em objetos Java com `.block()` quando necessário.
+- **SteamController**: expõe endpoints REST consumidos pelo frontend.
+- **DTOs**: mapeiam JSON da Steam, incluindo objetos aninhados (`price`, `platforms`) e listas (`items`).
+
+---
+
+## 🔹 Consumo de API Steam
+
+- Buscar jogos por termo:  
+`https://store.steampowered.com/api/storesearch/?term=TERMO&l=portuguese&cc=BR`
+- Buscar detalhes por ID:  
+`https://store.steampowered.com/api/appdetails?appids=APPID&l=portuguese&cc=BR`
+
+Fluxo:
+1. Backend consulta `storesearch` para buscar pelo termo.
+2. Pega o ID do jogo.
+3. Consulta `appdetails` para detalhes completos.
+4. Combina os resultados em `JogoCompletoDTO`.
+
+---
+
+## 🔹 WebClient e Mono
+
+- `WebClient` consome APIs externas de forma reativa.
+- `bodyToMono(Class)` converte JSON em objetos Java.
+- `.block()` é usado no Service se você precisar **do objeto real de forma síncrona**.
+- Para operações totalmente reativas, utilize `map` e `flatMap` sem `.block()`.
+
+---
+
+## 🔹 Banco de Dados
+
+- **MySQL** para persistir dados dos jogos.
+- **PL/SQL** para consultas customizadas, procedures ou triggers.
+- Entidades JPA mapeiam as tabelas do banco.
+
+Exemplo simplificado:
+
+```java
+@Entity
+public class Jogo {
+    @Id
+    private Long id;
+    private String nome;
+    private String tipo;
+    private int precoFinal;
+    private boolean gratuito;
+    // outros campos
+}
+🔹 Frontend
+
+Interface em React 18+ com TailwindCSS.
+
+Consome endpoints REST do backend.
+
+Exibe lista de jogos, preços e detalhes.
+
+Exemplo de requisição:
+
+fetch("/api/steam/buscar?termo=resident evil")
+  .then(res => res.json())
+  .then(data => console.log(data));
+🔹 Fluxo Completo
+
+Usuário digita termo no frontend → React envia requisição REST.
+
+Backend recebe via SteamController.
+
+SteamService chama SteamClient para consumir a Steam API.
+
+Recebe JSON → converte em DTO → combina dados → persiste no MySQL (opcional).
+
+Retorna JSON unificado para o frontend.
+
+React exibe lista de jogos e detalhes.
+
+🔹 Rodando o Projeto
+Backend
+# Entrar no diretório do backend
+cd backend
+
+# Rodar com Maven
+./mvnw spring-boot:run
+
+# ou com Gradle
+./gradlew bootRun
+Frontend
+# Entrar no diretório do frontend
+cd frontend
+
+# Instalar dependências
+npm install
+
+# Rodar a aplicação
+npm start
+🔹 Observações
+
+DTOs devem refletir JSON da Steam (@JsonProperty para campos reservados, ex: finalPrice).
+
+.block() é opcional, usado apenas se precisar de objeto Java real no Service.
+
+WebClient permite expandir para operações totalmente reativas futuramente.
+
+🔹 Estrutura de Pacotes Backend
+
+config → Beans e WebClient
+
+client → Consumo de APIs externas
+
+service → Regras de negócio e transformação de dados
+
+controller → Endpoints REST
+
+dto → Classes para mapear JSON
+
+model → Entidades JPA para MySQL
