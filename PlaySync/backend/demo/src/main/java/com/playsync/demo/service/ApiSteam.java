@@ -17,6 +17,7 @@ import com.playsync.demo.client.SteamClient;
 import com.playsync.demo.dtoresponse.BuscaPorTermoDTO;
 import com.playsync.demo.dtoresponse.ItensFiltradosPeloTermoDTO;
 import com.playsync.demo.dtoresponse.PrecoDeItensDTO;
+import com.playsync.demo.enums.ControllerSupport;
 import com.playsync.demo.repository.BuscaPorTermoRepository;
 import com.playsync.demo.repository.ItensBuscadosPeloTermoRepository;
 import com.playsync.demo.repository.PrecoPorJogoRepository;
@@ -40,7 +41,7 @@ public class ApiSteam {
 		System.out.println(itensNoBanco);
 		List<ItensFiltradosPeloTermoDTO> itensVindoDaApi = new ArrayList<>();
 		
-		System.out.println(validacao(itensNoBanco));
+		
 		if (itensNoBanco.isEmpty()) {
 			return metodoChamaApiEPersiste(termo);
 		}
@@ -61,11 +62,22 @@ public class ApiSteam {
 		List<ItensBuscadorPeloTermo> listaDeItens = new ArrayList<>();
 		BuscaPorTermo buscaPorTermo = new BuscaPorTermo(buscaDto.getItens().size());
 		for (ItensFiltradosPeloTermoDTO itens : buscaDto.getItens()) {
+			
+			if(itens.getPrecos() == null){
+				itens.setPrecos(new PrecoDeItensDTO(0.0,0.0));
+			}
+			
 			itens.getPrecos().setPrecoFinal(itens.getPrecos().getPrecoFinal()/100.0);
 			itens.getPrecos().setPrecoInicial((itens.getPrecos().getPrecoInicial()/100.0));
 			System.out.println(itens.getPrecos().getPrecoFinal());
 			ItensBuscadorPeloTermo itensBuscadoPeloTermo = new ItensBuscadorPeloTermo(itens.getIdGame(),
-					itens.getName(), buscaPorTermo, itens.getImg(), false, LocalDateTime.now());
+					itens.getName(), buscaPorTermo, itens.getImg(), null, LocalDateTime.now());
+			if(itens.getPossuiCompatibilidadeComControle().equalsIgnoreCase("FULL")){
+				itensBuscadoPeloTermo.setPossuiCompatibilidadeComControle(ControllerSupport.FULL);
+			}else{
+				itensBuscadoPeloTermo.setPossuiCompatibilidadeComControle(ControllerSupport.NULL);
+			}
+			
 			PrecoDeItensDTO precoDTO = itens.getPrecos();
 
 			if (precoDTO != null) {

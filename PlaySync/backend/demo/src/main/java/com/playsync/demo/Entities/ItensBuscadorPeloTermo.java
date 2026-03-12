@@ -7,6 +7,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import com.playsync.demo.dtoresponse.PrecoDeItensDTO;
+import com.playsync.demo.enums.ControllerSupport;
 
 import jakarta.annotation.Generated;
 import jakarta.persistence.CascadeType;
@@ -42,12 +43,12 @@ public class ItensBuscadorPeloTermo {
 	private List<PrecosJogos> precos = new ArrayList<>();
 	private String img;
 	@Column(name = "possui_compatibilidade_com_controle")
-	private boolean possuiCompatibilidadeComControle;
+	private ControllerSupport possuiCompatibilidadeComControle;
 	@Column(name = "data_pesquisa_usuario")
 	private LocalDateTime dataPesquisaUsuario;
 
 	public ItensBuscadorPeloTermo(Integer idGame, String nome, BuscaPorTermo buscaPorTermo, String img,
-			boolean possuiCompatibilidadeComControle, LocalDateTime dataPesquisaUsuario) {
+			ControllerSupport possuiCompatibilidadeComControle, LocalDateTime dataPesquisaUsuario) {
 		super();
 		this.idGame = idGame;
 		this.nome = nome;
