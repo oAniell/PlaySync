@@ -3,6 +3,7 @@ package com.playsync.demo.client;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.playsync.demo.dtoresponse.BuscaPorTermoDTO;
 
 import reactor.core.publisher.Mono;
@@ -21,14 +22,21 @@ public class SteamClient {
 	 */
 
 	public Mono<BuscaPorTermoDTO> buscarPorTermo(String termo) {
-		return this.webClient.get().
-				uri(uri -> uri.path("/storesearch/")
-						   .queryParam("name", termo)
-						   .queryParam("l", "portuguese")
-						   .queryParam("cc", "BR")
-						   .build())
-				.retrieve()
-				.bodyToMono(BuscaPorTermoDTO.class);
+	    return this.webClient.get()
+	        .uri(uri -> uri.path("/storesearch/")
+	                       .queryParam("term", termo)
+	                       .queryParam("l", "portuguese")
+	                       .queryParam("cc", "BR")
+	                       .build())
+	        .retrieve()
+	        .bodyToMono(String.class) // pega primeiro como String
+	        .map(json -> {
+	            try {
+	                return new ObjectMapper().readValue(json, BuscaPorTermoDTO.class);
+	            } catch (Exception e) {
+	                throw new RuntimeException("Erro ao mapear JSON da Steam", e);
+	            }
+	        });
+	}
 	}
 
-}
