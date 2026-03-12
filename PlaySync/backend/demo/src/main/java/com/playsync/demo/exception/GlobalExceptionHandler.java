@@ -23,4 +23,17 @@ public class GlobalExceptionHandler {
 
 		return ResponseEntity.status(ex.getStatusCode()).body(erro);
 	}
+
+	// Tratamento genérico para qualquer outra exceção
+	@ExceptionHandler(Exception.class)
+	public ResponseEntity<ErroResponse> handleGenericException(Exception ex, HttpServletRequest request) {
+		ex.printStackTrace(); // Para debug no console
+		ErroResponse erro = new ErroResponse(
+				HttpStatus.INTERNAL_SERVER_ERROR.value(),
+				"Erro interno do servidor",
+				ex.getMessage(),
+				request.getRequestURI());
+
+		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(erro);
+	}
 }

@@ -1,12 +1,12 @@
 // Configuração das URLs da API
-// Quando o backend estiver deployado na VM, atualize as URLs aqui
+// Backend Steam: POST /api-playsync/search?termo=xxx
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 // Endpoints da API
 export const API_ENDPOINTS = {
-  // Buscar jogos por termo
-  SEARCH_GAMES: (term) => `${API_BASE_URL}/api/games/search?q=${encodeURIComponent(term)}`,
+  // Buscar jogos por termo (endpoint do backend Steam)
+  SEARCH_GAMES: (term) => `${API_BASE_URL}/api-playsync/search?termo=${encodeURIComponent(term)}`,
   
   // Obter detalhes de um jogo específico
   GAME_DETAILS: (gameId) => `${API_BASE_URL}/api/games/${gameId}`,
@@ -46,7 +46,7 @@ const fetchAPI = async (url, options = {}) => {
 export const gameService = {
   // Buscar jogos por termo
   searchGames: async (term) => {
-    return fetchAPI(API_ENDPOINTS.SEARCH_GAMES(term));
+    return fetchAPI(API_ENDPOINTS.SEARCH_GAMES(term), { method: 'POST' });
   },
 
   // Obter detalhes de um jogo
