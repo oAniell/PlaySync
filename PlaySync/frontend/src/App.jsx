@@ -1,38 +1,34 @@
 import { useState } from 'react';
 import { Search, Gamepad2, ExternalLink, TrendingDown, Star, Sparkles, Joystick } from 'lucide-react';
-import { mockGames, featuredGame, trendingGames, searchGames } from './mockData';
+import { useGames } from './hooks/useGames';
+import { featuredGame, trendingGames } from './mockData';
 
 // URL fallback para imagens quebradas
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1612287230217-8c7684717995?w=400&h=300&fit=crop';
 
 function App() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [searchResults, setSearchResults] = useState(null);
   const [selectedGame, setSelectedGame] = useState(null);
-  const [isSearching, setIsSearching] = useState(false);
+  const { games, isLoading, error, search, clearSearch } = useGames();
+  const [searchResults, setSearchResults] = useState(null);
 
-  const handleSearch = (e) => {
+  const handleSearch = async (e) => {
     e.preventDefault();
     if (!searchTerm.trim()) return;
     
-    setIsSearching(true);
-    
-    // Simula uma busca com delay para dar feedback visual
-    setTimeout(() => {
-      const results = searchGames(searchTerm);
-      setSearchResults(results);
-      setSelectedGame(null);
-      setIsSearching(false);
-    }, 300);
+    await search(searchTerm);
+    setSelectedGame(null);
   };
 
   const handleReset = () => {
     setSearchResults(null);
     setSelectedGame(null);
     setSearchTerm('');
+    clearSearch();
   };
 
   const handleGameClick = (game) => {
+    console.log('Game clicked:', game);
     setSelectedGame(game);
     setSearchResults(null);
   };
@@ -44,6 +40,45 @@ function App() {
       offer.currentPrice < min.currentPrice ? offer : min
     , offers[0]);
   };
+
+  // Adaptar dados da API Steam para o formato do frontend
+  // Aceita tanto objeto com items quanto array direto
+  const adaptSteamData = (steamData) => {
+    // Se já for um array, usa diretamente
+    if (Array.isArray(steamData)) {
+      return steamData.map((item) => ({
+        id: item.id,
+        title: item.name,
+        coverImageUrl: item.tiny_image || item.img || item.coverImageUrl,
+        developer: 'Steam',
+        offers: item.price ? [{
+          currentPrice: item.price.final || 0,
+          originalPrice: item.price.initial || 0
+        }] : []
+      }));
+    }
+    
+    // Se for objeto com items
+    if (!steamData || !steamData.items) {
+      return [];
+    }
+    return steamData.items.map((item) => ({
+      id: item.id || item.idGame,
+      title: item.name,
+      coverImageUrl: item.tiny_image || item.img,
+      developer: 'Steam',
+      offers: item.price ? [{
+        currentPrice: item.price.final || 0,
+        originalPrice: item.price.initial || 0
+      }] : []
+    }));
+  };
+
+  console.log('Games state:', games);
+  console.log('Selected game:', selectedGame);
+  console.log('searchResults:', searchResults);
+  const displayResults = searchResults || (games.length > 0 ? adaptSteamData(games) : null);
+  console.log('Display results:', displayResults);
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-50 flex flex-col items-center p-4 py-12 font-sans">
@@ -76,10 +111,10 @@ function App() {
           />
           <button
             type="submit"
-            disabled={isSearching}
+            disabled={isLoading}
             className="absolute right-2 top-2 bottom-2 bg-purple-600 hover:bg-purple-500 disabled:bg-purple-800 text-white rounded-full p-4 transition-colors flex items-center justify-center"
           >
-            {isSearching ? (
+            {isLoading ? (
               <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
             ) : (
               <Search className="w-6 h-6" />
@@ -87,19 +122,26 @@ function App() {
           </button>
         </form>
 
+        {/* Erro na busca */}
+        {error && (
+          <div className="w-full max-w-3xl mb-6 p-4 bg-red-900/20 border border-red-500/50 rounded-lg text-red-400 text-center">
+            {error}
+          </div>
+        )}
+
         {/* Área de Resultados da Busca */}
-        {searchResults && searchResults.length > 0 && (
+        {!selectedGame && displayResults && displayResults.length > 0 && (
           <div className="w-full mb-12">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-semibold flex items-center gap-2">
                 <Search className="text-purple-400 w-5 h-5" />
                 Resultados para "{searchTerm}"
               </h3>
-              <span className="text-zinc-500 text-sm">{searchResults.length} jogos encontrados</span>
+              <span className="text-zinc-500 text-sm">{displayResults.length} jogos encontrados</span>
             </div>
             
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {searchResults.map((game) => {
+              {displayResults.map((game) => {
                 const lowestPrice = getLowestPrice(game.offers);
                 return (
                   <div 
@@ -109,7 +151,7 @@ function App() {
                   >
                     <div className="relative">
                       <img 
-                        src={game.coverImageUrl} 
+                        src={game.coverImageUrl || FALLBACK_IMAGE} 
                         alt={game.title} 
                         className="w-full h-32 object-cover"
                         onError={(e) => { e.target.src = FALLBACK_IMAGE; }}
@@ -137,7 +179,7 @@ function App() {
         )}
 
         {/* Área de Resultados da Busca - Sem resultados */}
-        {searchResults && searchResults.length === 0 && (
+        {!selectedGame && displayResults && displayResults.length === 0 && !isLoading && (
           <div className="w-full text-center py-12">
             <Joystick className="w-16 h-16 text-zinc-600 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-zinc-400 mb-2">Nenhum jogo encontrado</h3>
@@ -153,34 +195,42 @@ function App() {
             <div className="lg:col-span-1 bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden shadow-2xl">
               <div className="relative">
                 <img 
-                  src={selectedGame.coverImageUrl} 
+                  src={selectedGame.coverImageUrl || FALLBACK_IMAGE} 
                   alt={selectedGame.title} 
                   className="w-full h-56 object-cover"
                   onError={(e) => { e.target.src = FALLBACK_IMAGE; }}
                 />
-                <div className="absolute top-3 right-3 bg-purple-600 text-white text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                  <Star className="w-3 h-3 fill-current" />
-                  {selectedGame.rating}
-                </div>
+                {selectedGame.rating && (
+                  <div className="absolute top-3 right-3 bg-purple-600 text-white text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                    <Star className="w-3 h-3 fill-current" />
+                    {selectedGame.rating}
+                  </div>
+                )}
               </div>
               <div className="p-6">
                 <h2 className="text-xl font-bold mb-2 line-clamp-2">{selectedGame.title}</h2>
-                <div className="flex flex-wrap gap-2 mb-3">
-                  {selectedGame.genres.map((genre, index) => (
-                    <span key={index} className="text-purple-400 text-xs font-semibold border border-purple-900 bg-purple-950/30 px-2 py-1 rounded-full">
-                      {genre}
-                    </span>
-                  ))}
-                </div>
+                {selectedGame.genres && selectedGame.genres.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {selectedGame.genres.map((genre, index) => (
+                      <span key={index} className="text-purple-400 text-xs font-semibold border border-purple-900 bg-purple-950/30 px-2 py-1 rounded-full">
+                        {genre}
+                      </span>
+                    ))}
+                  </div>
+                )}
                 <p className="text-zinc-400 text-sm mb-3">
-                  <span className="text-zinc-500">Desenvolvedora:</span> {selectedGame.developer}
+                  <span className="text-zinc-500">Desenvolvedora:</span> {selectedGame.developer || 'Steam'}
                 </p>
-                <p className="text-zinc-400 text-sm mb-3">
-                  <span className="text-zinc-500">Editora:</span> {selectedGame.publisher}
-                </p>
-                <p className="text-zinc-400 text-sm leading-relaxed line-clamp-4">
-                  {selectedGame.description}
-                </p>
+                {selectedGame.publisher && (
+                  <p className="text-zinc-400 text-sm mb-3">
+                    <span className="text-zinc-500">Editora:</span> {selectedGame.publisher}
+                  </p>
+                )}
+                {selectedGame.description && (
+                  <p className="text-zinc-400 text-sm leading-relaxed line-clamp-4">
+                    {selectedGame.description}
+                  </p>
+                )}
                 <button 
                   onClick={handleReset}
                   className="mt-4 w-full bg-zinc-800 hover:bg-zinc-700 text-white py-2 rounded-lg transition-colors text-sm"
@@ -200,21 +250,32 @@ function App() {
               {/* Mapeamento das ofertas para gerar os cartões */}
               {selectedGame.offers.map((offer) => (
                 <div 
-                  key={offer.id} 
+                  key={offer.id || 0} 
                   className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 flex items-center justify-between hover:border-purple-500/50 transition-colors"
                 >
                   <div className="flex items-center gap-4">
-                    <img 
-                      src={offer.store.logoUrl} 
-                      alt={offer.store.name} 
-                      className="w-14 h-14 object-contain bg-zinc-800 rounded-lg p-2"
-                    />
-                    <div>
-                      <h4 className="font-bold text-lg">{offer.store.name}</h4>
-                      <p className="text-zinc-500 text-sm">
-                        Menor histórico: <span className="text-emerald-400">R$ {offer.historicalLowPrice.toFixed(2)}</span>
-                      </p>
-                    </div>
+                    {offer.store ? (
+                      <>
+                        <img 
+                          src={offer.store.logoUrl} 
+                          alt={offer.store.name} 
+                          className="w-14 h-14 object-contain bg-zinc-800 rounded-lg p-2"
+                        />
+                        <div>
+                          <h4 className="font-bold text-lg">{offer.store.name}</h4>
+                          <p className="text-zinc-500 text-sm">
+                            Menor histórico: <span className="text-emerald-400">R$ {offer.historicalLowPrice?.toFixed(2) || '0.00'}</span>
+                          </p>
+                        </div>
+                      </>
+                    ) : (
+                      <div>
+                        <h4 className="font-bold text-lg">Steam</h4>
+                        <p className="text-zinc-500 text-sm">
+                          Preço na Steam
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex items-center gap-6">
@@ -222,27 +283,39 @@ function App() {
                       <p className="text-emerald-400 font-extrabold text-3xl">
                         {offer.currentPrice === 0 ? 'Grátis' : `R$ ${offer.currentPrice.toFixed(2)}`}
                       </p>
-                      {offer.currentPrice > offer.historicalLowPrice && (
+                      {offer.currentPrice > (offer.historicalLowPrice || 0) && (
                         <p className="text-zinc-500 text-xs">
                           Acima do mínimo histórico
                         </p>
                       )}
-                      {offer.currentPrice <= offer.historicalLowPrice && (
+                      {offer.currentPrice <= (offer.historicalLowPrice || 0) && (
                         <p className="text-emerald-400 text-xs font-semibold">
                           ✨ No menor preço!
                         </p>
                       )}
                     </div>
                     
-                    <a 
-                      href={offer.dealUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="bg-purple-600 hover:bg-purple-500 text-white p-3 rounded-xl transition-colors flex items-center gap-2"
-                    >
-                      <span className="text-sm font-medium">Comprar</span>
-                      <ExternalLink className="w-5 h-5" />
-                    </a>
+                    {offer.dealUrl ? (
+                      <a 
+                        href={offer.dealUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="bg-purple-600 hover:bg-purple-500 text-white p-3 rounded-xl transition-colors flex items-center gap-2"
+                      >
+                        <span className="text-sm font-medium">Comprar</span>
+                        <ExternalLink className="w-5 h-5" />
+                      </a>
+                    ) : (
+                      <a 
+                        href={`https://store.steampowered.com/app/${selectedGame.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="bg-purple-600 hover:bg-purple-500 text-white p-3 rounded-xl transition-colors flex items-center gap-2"
+                      >
+                        <span className="text-sm font-medium">Ver na Steam</span>
+                        <ExternalLink className="w-5 h-5" />
+                      </a>
+                    )}
                   </div>
                 </div>
               ))}

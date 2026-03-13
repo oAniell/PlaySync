@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { mockGames, featuredGame, trendingGames, searchGames } from '../mockData';
+import { gameService } from '../services/api';
 
 // Hook para gerenciar dados de jogos
 // TODO: Quando o backend estiver pronto, substituir os dados mock por chamadas à API
@@ -17,15 +18,14 @@ export const useGames = () => {
     setError(null);
 
     try {
-      // TODO: Substituir por API real quando o backend estiver pronto
-      // const results = await gameService.searchGames(term);
-      // setGames(results);
-      
-      // Por agora, usa dados mock
-      await new Promise(resolve => setTimeout(resolve, 300)); // Simular delay
-      const results = searchGames(term);
-      setGames(results);
+      // Chama a API real do backend Steam
+      console.log('Buscando termo:', term);
+      const results = await gameService.searchGames(term);
+      console.log('Resultados recebidos:', results);
+      console.log('Itens recebidos:', results.items);
+      setGames(results.items || []);
     } catch (err) {
+      console.error('Erro na busca:', err);
       setError(err.message);
       setGames([]);
     } finally {
