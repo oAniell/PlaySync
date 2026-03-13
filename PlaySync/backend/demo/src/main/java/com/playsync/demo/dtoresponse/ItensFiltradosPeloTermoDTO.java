@@ -23,5 +23,11 @@ public class ItensFiltradosPeloTermoDTO {
 	private String img;
 	@JsonProperty("controller_support")
 	private String possuiCompatibilidadeComControle;
+	
+	// Campos adicionais para RAWG API
+	private String nomeGeneros;
+	private String nomePlataformas;
+	private String dataLancamento;
+	private Double avaliacao;
 
 }

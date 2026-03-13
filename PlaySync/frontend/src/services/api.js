@@ -1,5 +1,6 @@
 // Configuração das URLs da API
 // Backend Steam: POST /api-playsync/search?termo=xxx
+// Backend RAWG: GET /api-playsync/featured, GET /api-playsync/trending
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
@@ -7,6 +8,12 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 export const API_ENDPOINTS = {
   // Buscar jogos por termo (endpoint do backend Steam)
   SEARCH_GAMES: (term) => `${API_BASE_URL}/api-playsync/search?termo=${encodeURIComponent(term)}`,
+  
+  // Buscar jogo em destaque (endpoint do backend RAWG)
+  FEATURED_GAME: `${API_BASE_URL}/api-playsync/featured`,
+  
+  // Buscar jogos em tendência (endpoint do backend RAWG)
+  TRENDING_GAMES: (limit = 10) => `${API_BASE_URL}/api-playsync/trending?limit=${limit}`,
   
   // Obter detalhes de um jogo específico
   GAME_DETAILS: (gameId) => `${API_BASE_URL}/api/games/${gameId}`,
@@ -56,6 +63,16 @@ export const gameService = {
   // Buscar jogos por termo
   searchGames: async (term) => {
     return fetchAPI(API_ENDPOINTS.SEARCH_GAMES(term), { method: 'POST' });
+  },
+
+  // Buscar jogo em destaque
+  getFeaturedGame: async () => {
+    return fetchAPI(API_ENDPOINTS.FEATURED_GAME);
+  },
+
+  // Buscar jogos em tendência
+  getTrendingGames: async (limit = 10) => {
+    return fetchAPI(API_ENDPOINTS.TRENDING_GAMES(limit));
   },
 
   // Obter detalhes de um jogo

@@ -1,7 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, Gamepad2, ExternalLink, TrendingDown, Star, Sparkles, Joystick } from 'lucide-react';
 import { useGames } from './hooks/useGames';
-import { featuredGame, trendingGames } from './mockData';
 
 // URL fallback para imagens quebradas
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1612287230217-8c7684717995?w=400&h=300&fit=crop';
@@ -9,8 +8,14 @@ const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1612287230217-8c768471
 function App() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedGame, setSelectedGame] = useState(null);
-  const { games, isLoading, error, search, clearSearch } = useGames();
+  const { games, featured, trending, isLoading, error, search, clearSearch, loadFeatured, loadTrending } = useGames();
   const [searchResults, setSearchResults] = useState(null);
+
+  // Carregar dados da API ao iniciar
+  useEffect(() => {
+    loadFeatured();
+    loadTrending();
+  }, [loadFeatured, loadTrending]);
 
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -336,11 +341,11 @@ function App() {
               
               <div 
                 className="relative w-full h-72 md:h-96 rounded-2xl overflow-hidden cursor-pointer group"
-                onClick={() => handleGameClick(featuredGame)}
+                onClick={() => handleGameClick(featured)}
               >
                 <img 
-                  src={featuredGame.backgroundImageUrl || featuredGame.coverImageUrl} 
-                  alt={featuredGame.title}
+                  src={featured.backgroundImageUrl || featured.coverImageUrl || FALLBACK_IMAGE} 
+                  alt={featured.title}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   onError={(e) => { e.target.src = FALLBACK_IMAGE; }}
                 />
@@ -351,19 +356,19 @@ function App() {
                     <span className="bg-yellow-500 text-zinc-950 text-xs font-bold px-2 py-1 rounded">
                       DESTAQUE
                     </span>
-                    <span className="text-zinc-400 text-sm">{featuredGame.developer}</span>
+                    <span className="text-zinc-400 text-sm">{featured.genres || 'Jogo'}</span>
                   </div>
-                  <h2 className="text-3xl md:text-4xl font-bold mb-2">{featuredGame.title}</h2>
+                  <h2 className="text-3xl md:text-4xl font-bold mb-2">{featured.title}</h2>
                   <p className="text-zinc-300 text-sm md:text-base max-w-2xl mb-4 line-clamp-2">
-                    {featuredGame.description}
+                    {featured.platforms || 'Jogo disponível em várias plataformas'}
                   </p>
                   <div className="flex items-center gap-4">
-                    <span className="text-emerald-400 font-bold text-2xl">
-                      R$ {getLowestPrice(featuredGame.offers)?.currentPrice.toFixed(2)}
-                    </span>
-                    <span className="text-zinc-500 text-sm">
-                      a partir de {featuredGame.offers.length} lojas
-                    </span>
+                    {featured.rating && (
+                      <span className="text-yellow-400 font-bold text-2xl flex items-center gap-1">
+                        <Star className="w-5 h-5" />
+                        {featured.rating.toFixed(1)}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -377,8 +382,7 @@ function App() {
               </h3>
               
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                {trendingGames.map((game) => {
-                  const lowestPrice = getLowestPrice(game.offers);
+                {trending.map((game) => {
                   return (
                     <div 
                       key={game.id}
@@ -387,15 +391,17 @@ function App() {
                     >
                       <div className="relative">
                         <img 
-                          src={game.coverImageUrl} 
+                          src={game.coverImageUrl || game.backgroundImageUrl || FALLBACK_IMAGE} 
                           alt={game.title} 
                           className="w-full h-40 object-cover"
                           onError={(e) => { e.target.src = FALLBACK_IMAGE; }}
                         />
-                        <div className="absolute top-2 right-2 bg-purple-600 text-white text-xs font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-                          <Star className="w-3 h-3 fill-current" />
-                          {game.rating}
-                        </div>
+                        {game.rating && (
+                          <div className="absolute top-2 right-2 bg-purple-600 text-white text-xs font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                            <Star className="w-3 h-3 fill-current" />
+                            {typeof game.rating === 'number' ? game.rating.toFixed(1) : game.rating}
+                          </div>
+                        )}
                         <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 to-transparent opacity-40" />
                       </div>
                       <div className="p-3">
@@ -403,19 +409,14 @@ function App() {
                           {game.title}
                         </h4>
                         <div className="flex flex-wrap gap-1 mb-2">
-                          {game.genres.slice(0, 2).map((genre, idx) => (
-                            <span key={idx} className="text-zinc-500 text-xs">
-                              {genre}
-                            </span>
-                          ))}
-                        </div>
-                        <div className="flex items-center justify-between mt-2">
-                          <span className="text-zinc-400 text-xs">{game.developer}</span>
-                          {lowestPrice && (
-                            <span className="text-emerald-400 font-bold">
-                              {lowestPrice.currentPrice === 0 ? 'Grátis' : `R$ ${lowestPrice.currentPrice.toFixed(2)}`}
+                          {game.genres && (
+                            <span className="text-zinc-500 text-xs">
+                              {typeof game.genres === 'string' ? game.genres : game.genres?.join(', ')}
                             </span>
                           )}
+                        </div>
+                        <div className="flex items-center justify-between mt-2">
+                          <span className="text-zinc-400 text-xs">{game.platforms || 'Multiplataforma'}</span>
                         </div>
                       </div>
                     </div>
