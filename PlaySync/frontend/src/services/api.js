@@ -32,7 +32,16 @@ const fetchAPI = async (url, options = {}) => {
     const response = await fetch(url, mergedOptions);
     
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      // Tenta obter a mensagem de erro do corpo da resposta
+      let errorMessage = `HTTP error! status: ${response.status}`;
+      try {
+        const errorData = await response.json();
+        // O backend retorna a mensagem no campo "mensagem"
+        errorMessage = errorData.mensagem || errorData.message || errorData.reason || errorMessage;
+      } catch (e) {
+        // Se não conseguir ler o corpo, usa a mensagem padrão
+      }
+      throw new Error(errorMessage);
     }
     
     return await response.json();

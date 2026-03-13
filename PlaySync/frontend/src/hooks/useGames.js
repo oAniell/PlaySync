@@ -23,10 +23,22 @@ export const useGames = () => {
       const results = await gameService.searchGames(term);
       console.log('Resultados recebidos:', results);
       console.log('Itens recebidos:', results.items);
-      setGames(results.items || []);
+      
+      // Verifica se há itens na resposta
+      if (!results.items || results.items.length === 0) {
+        setError('Conteúdo não encontrado');
+        setGames([]);
+      } else {
+        setGames(results.items || []);
+      }
     } catch (err) {
       console.error('Erro na busca:', err);
-      setError(err.message);
+      // Verifica se o erro é 404 (Conteúdo não encontrado)
+      if (err.message.includes('404') || err.message.includes('Conteudo nao encontrado')) {
+        setError('Conteúdo não encontrado');
+      } else {
+        setError(err.message);
+      }
       setGames([]);
     } finally {
       setIsLoading(false);

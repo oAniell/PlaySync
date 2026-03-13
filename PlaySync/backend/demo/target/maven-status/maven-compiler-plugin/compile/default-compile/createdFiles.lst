@@ -1,0 +1,17 @@
+com\playsync\demo\dtoresponse\BuscaPorTermoDTO.class
+com\playsync\demo\dtoresponse\ItensFiltradosPeloTermoDTO.class
+com\playsync\demo\config\CorsConfig$1.class
+com\playsync\demo\Entities\BuscaPorTermo.class
+com\playsync\demo\config\WebClientConfig.class
+com\playsync\demo\exception\GlobalExceptionHandler.class
+com\playsync\demo\repository\ItensBuscadosPeloTermoRepository.class
+com\playsync\demo\enums\ControllerSupport.class
+com\playsync\demo\dtoresponse\ErroResponse.class
+com\playsync\demo\Entities\ItensBuscadorPeloTermo.class
+com\playsync\demo\client\SteamClient.class
+com\playsync\demo\PlaysyncApplication.class
+com\playsync\demo\Entities\PrecosJogos.class
+com\playsync\demo\dtoresponse\PrecoDeItensDTO.class
+com\playsync\demo\repository\PrecoPorJogoRepository.class
+com\playsync\demo\config\CorsConfig.class
+com\playsync\demo\repository\BuscaPorTermoRepository.class

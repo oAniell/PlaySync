@@ -61,6 +61,11 @@ public class ApiSteam {
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Nao encontrado nenhuma informacao");
 		}
 		
+		// Verifica se a lista de itens está vazia
+		if (buscaDto.getItens() == null || buscaDto.getItens().isEmpty()) {
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Conteudo nao encontrado");
+		}
+		
 		System.out.println("Resposta da API: " + buscaDto);
 
 		List<ItensBuscadorPeloTermo> listaDeItens = new ArrayList<>();
