@@ -13,8 +13,13 @@ public class WebClientConfig {
 	 */
 	@Bean
 	public WebClient webClient(WebClient.Builder builder) {
-	    return builder.baseUrl("https://store.steampowered.com/api")
-	            .defaultHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
-	            .build();
+		return builder.baseUrl("https://store.steampowered.com/api")
+				.defaultHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
+				.build();
+	}
+
+	@Bean
+	public WebClient rawgCliente(WebClient.Builder builder) {
+		return builder.baseUrl("https://api.rawg.io/api").build();
 	}
 }
