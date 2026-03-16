@@ -32,6 +32,11 @@ public class SteamClient {
 	        .bodyToMono(String.class) // pega primeiro como String
 	        .map(json -> {
 	            try {
+	                // Log da resposta JSON da Steam para debug
+	                System.out.println("=== RESPOSTA BRUTA DA STEAM API ===");
+	                System.out.println(json);
+	                System.out.println("=====================================");
+	                
 	                return new ObjectMapper().readValue(json, BuscaPorTermoDTO.class);
 	            } catch (Exception e) {
 	                throw new RuntimeException("Erro ao mapear JSON da Steam", e);

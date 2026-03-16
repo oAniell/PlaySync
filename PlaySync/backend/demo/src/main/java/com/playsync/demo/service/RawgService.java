@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import com.playsync.demo.client.RawgClient;
 import com.playsync.demo.dtoresponse.ItensFiltradosPeloTermoDTO;
 import com.playsync.demo.dtoresponse.RawgGame;
+import com.playsync.demo.dtoresponse.RawgGameDetailDTO;
 import com.playsync.demo.dtoresponse.RawgGameResponse;
 
 import lombok.RequiredArgsConstructor;
@@ -60,12 +61,15 @@ public class RawgService {
 		dto.setName(game.getName());
 		dto.setImg(game.getBackgroundImage());
 		
+		// Cria o objeto de detalhes da RAWG
+		RawgGameDetailDTO rawgDetails = new RawgGameDetailDTO();
+		
 		// Gêneros como string
 		if (game.getGenres() != null && !game.getGenres().isEmpty()) {
 			String genres = game.getGenres().stream()
 					.map(g -> g.getName())
 					.collect(Collectors.joining(", "));
-			dto.setNomeGeneros(genres);
+			rawgDetails.setNomeGeneros(genres);
 		}
 		
 		// Plataformas como string
@@ -74,14 +78,17 @@ public class RawgService {
 					.map(p -> p.getPlatform() != null ? p.getPlatform().getName() : null)
 					.filter(name -> name != null)
 					.collect(Collectors.joining(", "));
-			dto.setNomePlataformas(platforms);
+			rawgDetails.setNomePlataformas(platforms);
 		}
 		
 		// Data de lançamento
-		dto.setDataLancamento(game.getReleased());
+		rawgDetails.setDataLancamento(game.getReleased());
 		
 		// Avaliação
-		dto.setAvaliacao(game.getRating());
+		rawgDetails.setAvaliacao(game.getRating());
+		
+		// Define os detalhes da RAWG no DTO principal
+		dto.setRawgDetails(rawgDetails);
 		
 		return dto;
 	}
