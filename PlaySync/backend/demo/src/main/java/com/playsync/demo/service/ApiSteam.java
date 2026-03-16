@@ -41,8 +41,13 @@ public class ApiSteam {
 		List<ItensFiltradosPeloTermoDTO> itensVindoDaApi = new ArrayList<>();
 		
 		System.out.println("Validacao: " + validacao(itensNoBanco));
-		if (itensNoBanco.isEmpty()) {
-			System.out.println("Banco vazio, chamando API externa...");
+		
+		// Debug: forçar atualização sempre para testar a API
+		// Remover depois de testar
+		boolean forcarApi = true;
+		
+		if (itensNoBanco.isEmpty() || forcarApi) {
+			System.out.println("Banco vazio ou forçando API, chamando API externa...");
 			return metodoChamaApiEPersiste(termo);
 		}
 		if (validacao(itensNoBanco)) {
@@ -58,6 +63,11 @@ public class ApiSteam {
 
 		if (buscaDto == null) {
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Nao encontrado nenhuma informacao");
+		}
+		
+		// Verifica se a lista de itens está vazia
+		if (buscaDto.getItens() == null || buscaDto.getItens().isEmpty()) {
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Conteudo nao encontrado");
 		}
 		
 		System.out.println("Resposta da API: " + buscaDto);
@@ -166,7 +176,7 @@ public class ApiSteam {
 			if (i.getPrecos().isEmpty()) {
 
 				itensDto.add(new ItensFiltradosPeloTermoDTO(i.getIdGame(), i.getNome(), new PrecoDeItensDTO(0.0, 0.0),
-						i.getImg(), i.getPossuiCompatibilidadeComControle().toString()));
+						i.getImg(), i.getPossuiCompatibilidadeComControle().toString(), null));
 
 			} else {
 
@@ -174,7 +184,7 @@ public class ApiSteam {
 				System.out.println("Item: " + i.getNome() + " - Preco Final: " + p.getPrecoFinal() + " - Preco Inicial: " + p.getPrecoInicial());
 				itensDto.add(new ItensFiltradosPeloTermoDTO(i.getIdGame(), i.getNome(),
 						new PrecoDeItensDTO(p.getPrecoInicial(), p.getPrecoFinal()), i.getImg(),
-						i.getPossuiCompatibilidadeComControle().toString()));
+						i.getPossuiCompatibilidadeComControle().toString(), null));
 			}
 		}
 		BuscaPorTermoDTO result = new BuscaPorTermoDTO(itensDto.size(), itensDto);

@@ -1,16 +1,32 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, Gamepad2, ExternalLink, TrendingDown, Star, Sparkles, Joystick } from 'lucide-react';
 import { useGames } from './hooks/useGames';
-import { featuredGame, trendingGames } from './mockData';
+import { gameService } from './services/api';
 
 // URL fallback para imagens quebradas
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1612287230217-8c7684717995?w=400&h=300&fit=crop';
 
+// Função para normalizar URLs de imagens (Steam retorna URLs relativas)
+const normalizeImageUrl = (url) => {
+  if (!url) return FALLBACK_IMAGE;
+  // Se a URL começa com //, adicionar https:
+  if (url.startsWith('//')) {
+    return 'https:' + url;
+  }
+  return url;
+};
+
 function App() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedGame, setSelectedGame] = useState(null);
-  const { games, isLoading, error, search, clearSearch } = useGames();
+  const { games, featured, trending, isLoading, error, search, clearSearch, loadFeatured, loadTrending } = useGames();
   const [searchResults, setSearchResults] = useState(null);
+
+  // Carregar dados da API ao iniciar
+  useEffect(() => {
+    loadFeatured();
+    loadTrending();
+  }, [loadFeatured, loadTrending]);
 
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -27,9 +43,49 @@ function App() {
     clearSearch();
   };
 
-  const handleGameClick = (game) => {
+  const handleGameClick = async (game) => {
     console.log('Game clicked:', game);
-    setSelectedGame(game);
+    
+    // Se o jogo não tem ofertas ou vem do RAWG (sem preço), buscar preços na Steam
+    const needsPriceSearch = !game.offers || 
+                             game.offers.length === 0 || 
+                             game.offers[0].currentPrice === 0;
+    
+    if (needsPriceSearch) {
+      // Buscar preços automaticamente na Steam
+      const gameName = game.title;
+      console.log('Buscando preços na Steam para:', gameName);
+      
+      try {
+        // Chamar a API diretamente para obter os resultados
+        const results = await gameService.searchGames(gameName);
+        console.log('Resultados da busca:', results);
+        
+        if (results && results.items && results.items.length > 0) {
+          // Usar o primeiro resultado da Steam
+          const steamGame = adaptSteamData({ items: results.items })[0];
+          console.log('Jogo da Steam:', steamGame);
+          
+          // Mesclar dados: manter dados RAWG + preços da Steam
+          setSelectedGame({
+            ...game,
+            coverImageUrl: steamGame.coverImageUrl || game.coverImageUrl,
+            backgroundImageUrl: steamGame.backgroundImageUrl || game.backgroundImageUrl,
+            offers: steamGame.offers
+          });
+        } else {
+          // Não encontrou na Steam, manter dados originais
+          setSelectedGame(game);
+        }
+      } catch (err) {
+        console.error('Erro ao buscar preços:', err);
+        setSelectedGame(game);
+      }
+    } else {
+      // Jogo já tem preço (vem da busca), usar diretamente
+      setSelectedGame(game);
+    }
+    
     setSearchResults(null);
   };
 
@@ -47,11 +103,13 @@ function App() {
     // Se já for um array, usa diretamente
     if (Array.isArray(steamData)) {
       return steamData.map((item) => ({
-        id: item.id,
+        id: item.id || item.idGame,
         title: item.name,
-        coverImageUrl: item.tiny_image || item.img || item.coverImageUrl,
+        coverImageUrl: normalizeImageUrl(item.tiny_image || item.img || item.coverImageUrl),
+        backgroundImageUrl: normalizeImageUrl(item.tiny_image || item.img || item.backgroundImageUrl),
         developer: 'Steam',
         offers: item.price ? [{
+          id: item.id || 0,
           currentPrice: item.price.final || 0,
           originalPrice: item.price.initial || 0
         }] : []
@@ -65,12 +123,19 @@ function App() {
     return steamData.items.map((item) => ({
       id: item.id || item.idGame,
       title: item.name,
-      coverImageUrl: item.tiny_image || item.img,
+      coverImageUrl: normalizeImageUrl(item.tiny_image || item.img || item.coverImageUrl),
+      backgroundImageUrl: normalizeImageUrl(item.tiny_image || item.img || item.backgroundImageUrl),
       developer: 'Steam',
+      // Criar oferta padrão se não existir
       offers: item.price ? [{
+        id: item.id || 0,
         currentPrice: item.price.final || 0,
         originalPrice: item.price.initial || 0
-      }] : []
+      }] : [{
+        id: item.id || 0,
+        currentPrice: 0,
+        originalPrice: 0
+      }]
     }));
   };
 
@@ -78,7 +143,8 @@ function App() {
   console.log('Selected game:', selectedGame);
   console.log('searchResults:', searchResults);
   const displayResults = searchResults || (games.length > 0 ? adaptSteamData(games) : null);
-  console.log('Display results:', displayResults);
+  console.log('Display results - raw games:', games);
+  console.log('Display results - adapted:', displayResults);
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-50 flex flex-col items-center p-4 py-12 font-sans">
@@ -96,7 +162,7 @@ function App() {
             <h1 className="text-6xl font-extrabold tracking-tight">PlaySync</h1>
           </div>
           <p className="text-zinc-400 text-xl">
-            O agregador definitivo. Encontre o melhor preço para o seu próximo jogo.
+            Encontre o melhor preço para o seu próximo jogo.
           </p>
         </div>
 
@@ -195,12 +261,12 @@ function App() {
             <div className="lg:col-span-1 bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden shadow-2xl">
               <div className="relative">
                 <img 
-                  src={selectedGame.coverImageUrl || FALLBACK_IMAGE} 
+                  src={selectedGame.coverImageUrl || selectedGame.backgroundImageUrl || FALLBACK_IMAGE} 
                   alt={selectedGame.title} 
                   className="w-full h-56 object-cover"
                   onError={(e) => { e.target.src = FALLBACK_IMAGE; }}
                 />
-                {selectedGame.rating && (
+                {(!!selectedGame.rating) && (
                   <div className="absolute top-3 right-3 bg-purple-600 text-white text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1">
                     <Star className="w-3 h-3 fill-current" />
                     {selectedGame.rating}
@@ -247,78 +313,97 @@ function App() {
                 Melhores Ofertas
               </h3>
 
-              {/* Mapeamento das ofertas para gerar os cartões */}
-              {selectedGame.offers.map((offer) => (
-                <div 
-                  key={offer.id || 0} 
-                  className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 flex items-center justify-between hover:border-purple-500/50 transition-colors"
-                >
-                  <div className="flex items-center gap-4">
-                    {offer.store ? (
-                      <>
-                        <img 
-                          src={offer.store.logoUrl} 
-                          alt={offer.store.name} 
-                          className="w-14 h-14 object-contain bg-zinc-800 rounded-lg p-2"
-                        />
+              {/* Verificar se existem ofertas */}
+              {selectedGame.offers && selectedGame.offers.length > 0 ? (
+                /* Mapeamento das ofertas para gerar os cartões */
+                selectedGame.offers.map((offer) => (
+                  <div 
+                    key={offer.id || 0} 
+                    className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 flex items-center justify-between hover:border-purple-500/50 transition-colors"
+                  >
+                    <div className="flex items-center gap-4">
+                      {offer.store ? (
+                        <>
+                          <img 
+                            src={offer.store.logoUrl} 
+                            alt={offer.store.name} 
+                            className="w-14 h-14 object-contain bg-zinc-800 rounded-lg p-2"
+                          />
+                          <div>
+                            <h4 className="font-bold text-lg">{offer.store.name}</h4>
+                            <p className="text-zinc-500 text-sm">
+                              Menor histórico: <span className="text-emerald-400">R$ {offer.historicalLowPrice?.toFixed(2) || '0.00'}</span>
+                            </p>
+                          </div>
+                        </>
+                      ) : (
                         <div>
-                          <h4 className="font-bold text-lg">{offer.store.name}</h4>
+                          <h4 className="font-bold text-lg">Steam</h4>
                           <p className="text-zinc-500 text-sm">
-                            Menor histórico: <span className="text-emerald-400">R$ {offer.historicalLowPrice?.toFixed(2) || '0.00'}</span>
+                            Preço na Steam
                           </p>
                         </div>
-                      </>
-                    ) : (
-                      <div>
-                        <h4 className="font-bold text-lg">Steam</h4>
-                        <p className="text-zinc-500 text-sm">
-                          Preço na Steam
-                        </p>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-6">
-                    <div className="text-right">
-                      <p className="text-emerald-400 font-extrabold text-3xl">
-                        {offer.currentPrice === 0 ? 'Grátis' : `R$ ${offer.currentPrice.toFixed(2)}`}
-                      </p>
-                      {offer.currentPrice > (offer.historicalLowPrice || 0) && (
-                        <p className="text-zinc-500 text-xs">
-                          Acima do mínimo histórico
-                        </p>
-                      )}
-                      {offer.currentPrice <= (offer.historicalLowPrice || 0) && (
-                        <p className="text-emerald-400 text-xs font-semibold">
-                          ✨ No menor preço!
-                        </p>
                       )}
                     </div>
-                    
-                    {offer.dealUrl ? (
-                      <a 
-                        href={offer.dealUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="bg-purple-600 hover:bg-purple-500 text-white p-3 rounded-xl transition-colors flex items-center gap-2"
-                      >
-                        <span className="text-sm font-medium">Comprar</span>
-                        <ExternalLink className="w-5 h-5" />
-                      </a>
-                    ) : (
-                      <a 
-                        href={`https://store.steampowered.com/app/${selectedGame.id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="bg-purple-600 hover:bg-purple-500 text-white p-3 rounded-xl transition-colors flex items-center gap-2"
-                      >
-                        <span className="text-sm font-medium">Ver na Steam</span>
-                        <ExternalLink className="w-5 h-5" />
-                      </a>
-                    )}
+
+                    <div className="flex items-center gap-6">
+                      <div className="text-right">
+                        <p className="text-emerald-400 font-extrabold text-3xl">
+                          {offer.currentPrice === 0 ? 'Grátis' : `R$ ${offer.currentPrice.toFixed(2)}`}
+                        </p>
+                        {offer.currentPrice > (offer.historicalLowPrice || 0) && (
+                          <p className="text-zinc-500 text-xs">
+                            Acima do mínimo histórico
+                          </p>
+                        )}
+                        {offer.currentPrice <= (offer.historicalLowPrice || 0) && (
+                          <p className="text-emerald-400 text-xs font-semibold">
+                            ✨ No menor preço!
+                          </p>
+                        )}
+                      </div>
+                      
+                      {offer.dealUrl ? (
+                        <a 
+                          href={offer.dealUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="bg-purple-600 hover:bg-purple-500 text-white p-3 rounded-xl transition-colors flex items-center gap-2"
+                        >
+                          <span className="text-sm font-medium">Comprar</span>
+                          <ExternalLink className="w-5 h-5" />
+                        </a>
+                      ) : (
+                        <a 
+                          href={`https://store.steampowered.com/app/${selectedGame.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="bg-purple-600 hover:bg-purple-500 text-white p-3 rounded-xl transition-colors flex items-center gap-2"
+                        >
+                          <span className="text-sm font-medium">Ver na Steam</span>
+                          <ExternalLink className="w-5 h-5" />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                /* Fallback quando não há ofertas */
+                <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 flex items-center justify-center">
+                  <div className="text-center">
+                    <p className="text-zinc-400 mb-2">Informações de preço não disponíveis</p>
+                    <a 
+                      href={`https://store.steampowered.com/search/?term=${encodeURIComponent(selectedGame.title)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg transition-colors inline-flex items-center gap-2"
+                    >
+                      <span className="text-sm font-medium">Buscar na Steam</span>
+                      <ExternalLink className="w-4 h-4" />
+                    </a>
                   </div>
                 </div>
-              ))}
+              )}
             </div>
 
           </div>
@@ -336,11 +421,11 @@ function App() {
               
               <div 
                 className="relative w-full h-72 md:h-96 rounded-2xl overflow-hidden cursor-pointer group"
-                onClick={() => handleGameClick(featuredGame)}
+                onClick={() => handleGameClick(featured)}
               >
                 <img 
-                  src={featuredGame.backgroundImageUrl || featuredGame.coverImageUrl} 
-                  alt={featuredGame.title}
+                  src={featured.backgroundImageUrl || featured.coverImageUrl || FALLBACK_IMAGE} 
+                  alt={featured.title}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   onError={(e) => { e.target.src = FALLBACK_IMAGE; }}
                 />
@@ -351,20 +436,22 @@ function App() {
                     <span className="bg-yellow-500 text-zinc-950 text-xs font-bold px-2 py-1 rounded">
                       DESTAQUE
                     </span>
-                    <span className="text-zinc-400 text-sm">{featuredGame.developer}</span>
+                    <span className="text-zinc-400 text-sm">{featured.genres || 'Jogo'}</span>
                   </div>
-                  <h2 className="text-3xl md:text-4xl font-bold mb-2">{featuredGame.title}</h2>
-                  <p className="text-zinc-300 text-sm md:text-base max-w-2xl mb-4 line-clamp-2">
-                    {featuredGame.description}
-                  </p>
-                  <div className="flex items-center gap-4">
-                    <span className="text-emerald-400 font-bold text-2xl">
-                      R$ {getLowestPrice(featuredGame.offers)?.currentPrice.toFixed(2)}
-                    </span>
-                    <span className="text-zinc-500 text-sm">
-                      a partir de {featuredGame.offers.length} lojas
-                    </span>
-                  </div>
+                  <h2 className="text-3xl md:text-4xl font-bold mb-2">{featured.title}</h2>
+                  {(featured.platforms) && (
+                    <p className="text-zinc-300 text-sm md:text-base max-w-2xl mb-4 line-clamp-2">
+                      {featured.platforms}
+                    </p>
+                  )}
+                  {(!!featured.rating) && (
+                    <div className="flex items-center gap-4">
+                      <span className="text-yellow-400 font-bold text-2xl flex items-center gap-1">
+                        <Star className="w-5 h-5" />
+                        {typeof featured.rating === 'number' ? featured.rating.toFixed(1) : featured.rating}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -377,8 +464,7 @@ function App() {
               </h3>
               
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                {trendingGames.map((game) => {
-                  const lowestPrice = getLowestPrice(game.offers);
+                {trending.map((game) => {
                   return (
                     <div 
                       key={game.id}
@@ -387,15 +473,17 @@ function App() {
                     >
                       <div className="relative">
                         <img 
-                          src={game.coverImageUrl} 
+                          src={game.coverImageUrl || game.backgroundImageUrl || FALLBACK_IMAGE} 
                           alt={game.title} 
                           className="w-full h-40 object-cover"
                           onError={(e) => { e.target.src = FALLBACK_IMAGE; }}
                         />
-                        <div className="absolute top-2 right-2 bg-purple-600 text-white text-xs font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-                          <Star className="w-3 h-3 fill-current" />
-                          {game.rating}
-                        </div>
+                        {(!!game.rating) && (
+                          <div className="absolute top-2 right-2 bg-purple-600 text-white text-xs font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                            <Star className="w-3 h-3 fill-current" />
+                            {typeof game.rating === 'number' ? game.rating.toFixed(1) : game.rating}
+                          </div>
+                        )}
                         <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 to-transparent opacity-40" />
                       </div>
                       <div className="p-3">
@@ -403,19 +491,14 @@ function App() {
                           {game.title}
                         </h4>
                         <div className="flex flex-wrap gap-1 mb-2">
-                          {game.genres.slice(0, 2).map((genre, idx) => (
-                            <span key={idx} className="text-zinc-500 text-xs">
-                              {genre}
-                            </span>
-                          ))}
-                        </div>
-                        <div className="flex items-center justify-between mt-2">
-                          <span className="text-zinc-400 text-xs">{game.developer}</span>
-                          {lowestPrice && (
-                            <span className="text-emerald-400 font-bold">
-                              {lowestPrice.currentPrice === 0 ? 'Grátis' : `R$ ${lowestPrice.currentPrice.toFixed(2)}`}
+                          {game.genres && (
+                            <span className="text-zinc-500 text-xs">
+                              {typeof game.genres === 'string' ? game.genres : game.genres?.join(', ')}
                             </span>
                           )}
+                        </div>
+                        <div className="flex items-center justify-between mt-2">
+                          <span className="text-zinc-400 text-xs">{game.platforms || 'Multiplataforma'}</span>
                         </div>
                       </div>
                     </div>

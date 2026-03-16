@@ -23,5 +23,7 @@ public class ItensFiltradosPeloTermoDTO {
 	private String img;
 	@JsonProperty("controller_support")
 	private String possuiCompatibilidadeComControle;
-
+	
+	// Dados adicionais da RAWG API
+	private RawgGameDetailDTO rawgDetails;
 }
