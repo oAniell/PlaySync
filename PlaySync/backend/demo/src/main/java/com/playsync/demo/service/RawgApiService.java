@@ -55,6 +55,9 @@ public class RawgApiService {
 		if (totalItensBuscadosRawgDTO == null) {
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, " Nao foi encontrado itens por esse termo");
 		}
+		if (temItemAtrasado(nomeJogo)) {
+
+		}
 
 		persisteInformacaoNoBanco(totalItensBuscadosRawgDTO);
 		return totalItensBuscadosRawgDTO;
@@ -67,11 +70,10 @@ public class RawgApiService {
 			LocalDateTime dataLimite = LocalDateTime.now().minusSeconds(10);
 			if (rawgApiBuscaTermoList.getDataLastSearch().isBefore(dataLimite)) {
 				itensQuePassouDoTempoPrazo.add(rawgApiBuscaTermoList);
-
 			}
 		}
 		if (!itensQuePassouDoTempoPrazo.isEmpty()) {
-
+			atualizaInformacaoNoBanco(itensQuePassouDoTempoPrazo, termo);
 			return true;
 		}
 		return false;
@@ -79,7 +81,8 @@ public class RawgApiService {
 	}
 
 	@Transactional
-	private void atualizaInformacaoNoBanco(List<RawgApiBuscaTermo> itensQuePassouDoTempoPrazo, String termo) {
+	private void atualizaInformacaoNoBanco(List<RawgApiBuscaTermo> itensQuePassouDoTempoPrazo,
+			List<RawgApiBuscaTermo> listaCompleta, String termo) {
 		TotalItensBuscadosRawgDTO totalItensBuscadosRawgDTO = this.rawgClient.buscarPorTermoRawg(termo).block();
 		for (RawgApiBuscaTermoDTO rawgApiBuscaTermoDTO : totalItensBuscadosRawgDTO.getRawgApiBuscaTermo()) {
 			for (RawgApiBuscaTermo rawgApiBuscaTermo : itensQuePassouDoTempoPrazo) {
@@ -201,12 +204,21 @@ public class RawgApiService {
 	}
 
 	private TotalItensBuscadosRawg montaDto(List<RawgApiBuscaTermo> lista) {
-
 		TotalItensBuscadosRawg totalItensBuscadosRawg = new TotalItensBuscadosRawg(lista.size());
+		List<RawgApiBuscaTermoDTO> rawgApiBuscaTermoDTOs = new ArrayList<>();
 		for (RawgApiBuscaTermo listaEntity : lista) {
+			RawgApiBuscaTermoDTO rawgApiBuscaTermoDTO = new RawgApiBuscaTermoDTO(listaEntity.getNome(),
+					listaEntity.getDataLancamento(),
+					listaEntity.getImgBackground(), listaEntity.getIdGame(), listaEntity.getNotaMediaJogo(),
+					listaEntity.getNumeroAvaliacoes(), null, null, null);
+			rawgApiBuscaTermoDTOs.add(rawgApiBuscaTermoDTO);
+			for (PlataformasRawg plataformasRawg : listaEntity.getPlataformasRawgs()) {
+				PlataformsRawg plataformsRawg = new PlataformsRawg(
+						new PlataformasRawgDTO(plataformasRawg.getIdPlataforma(), plataformasRawg.getPlataforma()));
+			}
+			
 
 		}
-		return null;
 	}
 
 }
