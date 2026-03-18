@@ -30,10 +30,9 @@ public class LojasRawgApi {
     @JoinColumn(name = "id_rawg_api_busca_termo")
     private RawgApiBuscaTermo rawgApiBuscaTermo;
 
-    public LojasRawgApi(String nome, Long idLoja, RawgApiBuscaTermo rawgApiBuscaTermo) {
+    public LojasRawgApi(String nome, Long idLoja) {
         this.nome = nome;
         this.idLoja = idLoja;
-        this.rawgApiBuscaTermo = rawgApiBuscaTermo;
     }
 
 }

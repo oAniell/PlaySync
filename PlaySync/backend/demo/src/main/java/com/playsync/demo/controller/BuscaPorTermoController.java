@@ -33,7 +33,7 @@ public class BuscaPorTermoController {
 
 	@PostMapping("/search-in-rawg")
 	public TotalItensBuscadosRawgDTO buscarRawg(@RequestParam String termo) {
-		return this.rawgApi.buscarItensNaApi(termo);
+		return this.rawgApi.principalMethod(termo);
 	}
 
 }

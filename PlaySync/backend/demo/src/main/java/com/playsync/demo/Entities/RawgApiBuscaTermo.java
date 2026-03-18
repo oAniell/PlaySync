@@ -6,6 +6,7 @@ import java.util.List;
 
 import org.hibernate.annotations.Collate;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -51,22 +52,24 @@ public class RawgApiBuscaTermo {
     @ManyToOne
     @JoinColumn(name = "id_total_itens_buscados_rawg")
     private TotalItensBuscadosRawg totalItensBuscadosRawg;
-    @OneToMany(mappedBy = "apiBuscaTermo")
-    private List<PlataformasRawg> plataformasRawgs = new ArrayList<>();
-    @OneToMany(mappedBy = "rawgApiBuscaTermo")
+    @OneToMany(mappedBy = "rawgApiBuscaTermo", cascade = CascadeType.ALL)
+    private List<PlataformasRawgEntity> plataformasRawgs = new ArrayList<>();
+    @OneToMany(mappedBy = "rawgApiBuscaTermo", cascade = CascadeType.ALL)
     private List<GenerosApiRawg> generosApiRawgs = new ArrayList<>();
-    @OneToMany(mappedBy = "rawgApiBuscaTermo")
+    @OneToMany(mappedBy = "rawgApiBuscaTermo", cascade = CascadeType.ALL)
     private List<LojasRawgApi> lojasRawgApis = new ArrayList<>();
     @Column(name = "data_last_search")
     private LocalDateTime dataLastSearch;
 
     public RawgApiBuscaTermo(String nome, String dataLancamento, String imgBackground, Double notaMediaJogo,
-            String numeroAvaliacoes, TotalItensBuscadosRawg totalItensBuscadosRawg, LocalDateTime dataLastSearch) {
+            String numeroAvaliacoes, Long idGame, TotalItensBuscadosRawg totalItensBuscadosRawg,
+            LocalDateTime dataLastSearch) {
         this.nome = nome;
         this.dataLancamento = dataLancamento;
         this.imgBackground = imgBackground;
         this.notaMediaJogo = notaMediaJogo;
         this.numeroAvaliacoes = numeroAvaliacoes;
+        this.idGame = idGame;
         this.totalItensBuscadosRawg = totalItensBuscadosRawg;
         this.dataLastSearch = dataLastSearch;
     }

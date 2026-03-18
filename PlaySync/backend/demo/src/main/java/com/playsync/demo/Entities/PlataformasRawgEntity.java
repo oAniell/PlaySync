@@ -18,7 +18,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @Table(name = "plataformas_rawg")
-public class PlataformasRawg {
+public class PlataformasRawgEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -28,12 +28,11 @@ public class PlataformasRawg {
     private Long idPlataforma;
     @ManyToOne
     @JoinColumn(name = "id_api_busca_termo")
-    private RawgApiBuscaTermo apiBuscaTermo;
+    private RawgApiBuscaTermo rawgApiBuscaTermo;
 
-    public PlataformasRawg(String plataforma,Long idPlataforma, RawgApiBuscaTermo apiBuscaTermo) {
+    public PlataformasRawgEntity(String plataforma,Long idPlataforma) {
         this.plataforma = plataforma;
         this.idPlataforma= idPlataforma;
-        this.apiBuscaTermo = apiBuscaTermo;
     }
 
 }

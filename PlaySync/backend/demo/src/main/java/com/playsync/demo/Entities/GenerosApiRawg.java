@@ -29,10 +29,9 @@ public class GenerosApiRawg {
     @JoinColumn(name = "id_rawg_api_busca_termo")
     private RawgApiBuscaTermo rawgApiBuscaTermo;
 
-    public GenerosApiRawg(String nome, Long idGenero, RawgApiBuscaTermo rawgApiBuscaTermo) {
+    public GenerosApiRawg(String nome, Long idGenero) {
         this.nome = nome;
         this.idGenero = idGenero;
-        this.rawgApiBuscaTermo = rawgApiBuscaTermo;
     }
 
 }
