@@ -35,6 +35,7 @@ public class RawgApiService {
 	private final RawgClient rawgClient;
 	private final TotalItensBuscadosRawgRepository totalItensBuscadosRawgRepository;
 	private final RawgApiBuscaTermoRepository rawgApiBuscaTermoRepository;
+	private final CheapSharkApiService cheapSharkApiService;
 
 	public TotalItensBuscadosRawgDTO principalMethod(String nomeJogo) {
 		List<RawgApiBuscaTermo> rawgApiBuscaTermos = this.rawgApiBuscaTermoRepository.selectByName(nomeJogo);
@@ -122,6 +123,7 @@ public class RawgApiService {
 					}
 				}
 			}
+
 		}
 
 		this.rawgApiBuscaTermoRepository.saveAll(itensQuePassouDoTempoPrazo);
@@ -236,5 +238,9 @@ public class RawgApiService {
 		return totalItensBuscadosRawg;
 
 	}
+
+
+
+	
 
 }
