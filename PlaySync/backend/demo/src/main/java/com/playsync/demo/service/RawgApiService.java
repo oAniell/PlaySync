@@ -2,7 +2,9 @@ package com.playsync.demo.service;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.stereotype.Service;
 
@@ -77,56 +79,88 @@ public class RawgApiService {
 	@Transactional
 	private TotalItensBuscadosRawgDTO atualizaInformacaoNoBancoERetornaDto(
 			List<RawgApiBuscaTermo> itensQuePassouDoTempoPrazo,
-			List<RawgApiBuscaTermo> listaCompleta, String termo) {
-		TotalItensBuscadosRawgDTO totalItensBuscadosRawgDTO = this.rawgClient.buscarPorTermoRawg(termo).block();
-		for (RawgApiBuscaTermoDTO rawgApiBuscaTermoDTO : totalItensBuscadosRawgDTO.getRawgApiBuscaTermo()) {
-			for (RawgApiBuscaTermo rawgApiBuscaTermo : itensQuePassouDoTempoPrazo) {
-				if (rawgApiBuscaTermoDTO.getIdGame().equals(rawgApiBuscaTermo.getIdGame())) {
-					rawgApiBuscaTermo.setDataLastSearch(LocalDateTime.now());
-					rawgApiBuscaTermo.setImgBackground(rawgApiBuscaTermoDTO.getImgBackground());
-					rawgApiBuscaTermo.setNome(rawgApiBuscaTermoDTO.getNome());
-					rawgApiBuscaTermo.setNotaMediaJogo(rawgApiBuscaTermoDTO.getNotaMediaJogo());
-					rawgApiBuscaTermo.setNumeroAvaliacoes(rawgApiBuscaTermoDTO.getNumeroAvaliacoes());
-					rawgApiBuscaTermo.setDataLancamento(rawgApiBuscaTermoDTO.getDataLancamento());
-					if (rawgApiBuscaTermo.getPlataformasRawgs() != null
-							&& !rawgApiBuscaTermo.getPlataformasRawgs().isEmpty()) {
-						for (PlataformasRawgEntity plataformasRawg : rawgApiBuscaTermo.getPlataformasRawgs()) {
-							for (PlataformsRawg plataformasRawgDTO : rawgApiBuscaTermoDTO.getPlataformas()) {
-								if (plataformasRawg.getId()
-										.equals(plataformasRawgDTO.getPlataformasRawgDTO().getIdPlataforma())) {
-									plataformasRawg
-											.setPlataforma(plataformasRawgDTO.getPlataformasRawgDTO().getPlataforma());
-								}
-							}
-						}
+			List<RawgApiBuscaTermo> listaCompleta,
+			String termo) {
 
-					}
-					if (rawgApiBuscaTermo.getGenerosApiRawgs() != null
-							&& !rawgApiBuscaTermo.getGenerosApiRawgs().isEmpty()) {
-						for (GenerosApiRawg generosApiRawg : rawgApiBuscaTermo.getGenerosApiRawgs()) {
-							for (GenerosApiRawgDTO generosApiRawgDTO : rawgApiBuscaTermoDTO.getGenerosApiRawgDTOs()) {
-								if (generosApiRawg.getId().equals(generosApiRawgDTO.getIdGeneros())) {
-									generosApiRawg.setNome(generosApiRawgDTO.getNome());
-								}
-							}
-						}
-					}
-					if (rawgApiBuscaTermo.getLojasRawgApis() != null
-							&& !rawgApiBuscaTermo.getLojasRawgApis().isEmpty()) {
-						for (LojasRawgApi lojasRawgApi : rawgApiBuscaTermo.getLojasRawgApis()) {
-							for (StoresRawg storesRawg : rawgApiBuscaTermoDTO.getStoresRawgs()) {
-								if (lojasRawgApi.getIdLoja().equals(storesRawg.getLojasRawgApiDTO().getIdLoja())) {
-									lojasRawgApi.setNome(storesRawg.getLojasRawgApiDTO().getNome());
-								}
-							}
-						}
+		TotalItensBuscadosRawgDTO totalItensBuscadosRawgDTO = this.rawgClient.buscarPorTermoRawg(termo).block();
+
+		Map<Long, RawgApiBuscaTermo> mapaItensAtrasados = new HashMap<>();
+		for (RawgApiBuscaTermo entity : itensQuePassouDoTempoPrazo) {
+			mapaItensAtrasados.put(entity.getIdGame(), entity);
+		}
+
+		for (RawgApiBuscaTermoDTO dto : totalItensBuscadosRawgDTO.getRawgApiBuscaTermo()) {
+
+			RawgApiBuscaTermo entity = mapaItensAtrasados.get(dto.getIdGame());
+
+			if (entity == null) {
+				continue;
+			}
+
+			entity.setDataLastSearch(LocalDateTime.now());
+			entity.setImgBackground(dto.getImgBackground());
+			entity.setNome(dto.getNome());
+			entity.setNotaMediaJogo(dto.getNotaMediaJogo());
+			entity.setNumeroAvaliacoes(dto.getNumeroAvaliacoes());
+			entity.setDataLancamento(dto.getDataLancamento());
+
+			if (dto.getPlataformas() != null) {
+
+				Map<Long, PlataformsRawg> mapaPlataformasDTO = new HashMap<>();
+				for (PlataformsRawg p : dto.getPlataformas()) {
+					mapaPlataformasDTO.put(
+							p.getPlataformasRawgDTO().getIdPlataforma(),
+							p);
+				}
+
+				for (PlataformasRawgEntity plataformaEntity : entity.getPlataformasRawgs()) {
+					PlataformsRawg plataformaDTO = mapaPlataformasDTO.get(plataformaEntity.getIdPlataforma());
+
+					if (plataformaDTO != null) {
+						plataformaEntity.setPlataforma(
+								plataformaDTO.getPlataformasRawgDTO().getPlataforma());
 					}
 				}
 			}
 
+			if (dto.getGenerosApiRawgDTOs() != null) {
+
+				Map<Long, GenerosApiRawgDTO> mapaGenerosDTO = new HashMap<>();
+				for (GenerosApiRawgDTO g : dto.getGenerosApiRawgDTOs()) {
+					mapaGenerosDTO.put(g.getIdGeneros(), g);
+				}
+
+				for (GenerosApiRawg generoEntity : entity.getGenerosApiRawgs()) {
+					GenerosApiRawgDTO generoDTO = mapaGenerosDTO.get(generoEntity.getIdGenero());
+
+					if (generoDTO != null) {
+						generoEntity.setNome(generoDTO.getNome());
+					}
+				}
+			}
+
+			if (dto.getStoresRawgs() != null) {
+
+				Map<Long, StoresRawg> mapaLojasDTO = new HashMap<>();
+				for (StoresRawg s : dto.getStoresRawgs()) {
+					mapaLojasDTO.put(
+							s.getLojasRawgApiDTO().getIdLoja(),
+							s);
+				}
+
+				for (LojasRawgApi lojaEntity : entity.getLojasRawgApis()) {
+					StoresRawg lojaDTO = mapaLojasDTO.get(lojaEntity.getIdLoja());
+
+					if (lojaDTO != null) {
+						lojaEntity.setNome(
+								lojaDTO.getLojasRawgApiDTO().getNome());
+					}
+				}
+			}
 		}
 
-		this.rawgApiBuscaTermoRepository.saveAll(itensQuePassouDoTempoPrazo);
+		rawgApiBuscaTermoRepository.saveAll(itensQuePassouDoTempoPrazo);
+
 		return montaDto(listaCompleta);
 	}
 
@@ -238,9 +272,5 @@ public class RawgApiService {
 		return totalItensBuscadosRawg;
 
 	}
-
-
-
-	
 
 }

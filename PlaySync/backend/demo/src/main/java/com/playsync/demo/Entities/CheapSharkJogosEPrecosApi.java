@@ -1,5 +1,9 @@
 package com.playsync.demo.Entities;
 
+import java.time.LocalDateTime;
+
+import org.springframework.cglib.core.Local;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import jakarta.persistence.Column;
@@ -39,14 +43,18 @@ public class CheapSharkJogosEPrecosApi {
     @JoinColumn(name = "id_loja_jogo")
     private CheapSharkLojasApi cheapSharkLojasApi;
 
+    @Column(name = "data_last_search")
+    private LocalDateTime dataLastSearch;
+
     public CheapSharkJogosEPrecosApi(String nomeJogo, Double precoAtual, Double precoOriginal, Double desconto,
-            Long storeId, CheapSharkLojasApi cheapSharkLojasApi) {
+            Long storeId, CheapSharkLojasApi cheapSharkLojasApi, LocalDateTime dataLastSearch) {
         this.nomeJogo = nomeJogo;
         this.precoAtual = precoAtual;
         this.precoOriginal = precoOriginal;
         this.desconto = desconto;
         this.storeId = storeId;
         this.cheapSharkLojasApi = cheapSharkLojasApi;
+        this.dataLastSearch = dataLastSearch;
     }
 
 }

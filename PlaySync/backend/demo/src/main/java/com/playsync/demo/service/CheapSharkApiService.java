@@ -1,8 +1,13 @@
 package com.playsync.demo.service;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import org.springframework.cglib.core.Local;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -34,12 +39,52 @@ public class CheapSharkApiService {
         if (cheapSharkApiBanco == null || cheapSharkApiBanco.isEmpty()) {
             return validaTermo(termo);
         }
-        return montaDto(cheapSharkApiBanco);
+        return validaINformacaoNoBancoDeDados(cheapSharkApiBanco, termo);
     }
 
     // testes de requisicoes
     public List<CheapSharkApiDto> pegarInformacoesNaApi(String termo) {
         return this.cheapSharkClient.buscarPrecoCheapShark(termo).block();
+    }
+
+    public List<CheapSharkApiDto> validaINformacaoNoBancoDeDados(
+            List<CheapSharkJogosEPrecosApi> listaDeEntidadesNoBanco, String termo) {
+        List<CheapSharkJogosEPrecosApi> listaDeDesatualizados = validaItensDesatualizados(listaDeEntidadesNoBanco);
+        if (listaDeDesatualizados != null && !listaDeDesatualizados.isEmpty()) {
+            List<CheapSharkApiDto> buscaApi = pegarInformacoesNaApi(termo);
+            Map<String, CheapSharkApiDto> mapaApi = new HashMap<>();
+
+            for (CheapSharkApiDto dto : buscaApi) {
+                mapaApi.put(dto.getNomeJogo().toLowerCase(), dto);
+            }
+
+            for (CheapSharkJogosEPrecosApi entidade : listaDeDesatualizados) {
+                CheapSharkApiDto dto = mapaApi.get(entidade.getNomeJogo().toLowerCase());
+                if (dto != null) {
+                    entidade.setDataLastSearch(LocalDateTime.now());
+                    entidade.setDesconto(dto.getDesconto());
+                    entidade.setNomeJogo(dto.getNomeJogo());
+                    entidade.setPrecoAtual(dto.getPrecoAtual());
+                    entidade.setPrecoOriginal(dto.getPrecoOriginal());
+
+                }
+            }
+            this.cheapSharkJogosEPrecosApiRepository.saveAll(listaDeDesatualizados);
+        }
+        return montaDto(listaDeEntidadesNoBanco);
+
+    }
+
+    public List<CheapSharkJogosEPrecosApi> validaItensDesatualizados(
+            List<CheapSharkJogosEPrecosApi> listaDeEntidadesNoBanco) {
+        List<CheapSharkJogosEPrecosApi> listaDeItensDesatualizados = new ArrayList<>();
+        for (CheapSharkJogosEPrecosApi cheapSharkJogosEPrecosApi : listaDeEntidadesNoBanco) {
+            LocalDateTime dataLimite = LocalDateTime.now().minusSeconds(10);
+            if (cheapSharkJogosEPrecosApi.getDataLastSearch().isBefore(dataLimite)) {
+                listaDeItensDesatualizados.add(cheapSharkJogosEPrecosApi);
+            }
+        }
+        return listaDeItensDesatualizados;
     }
 
     /*
@@ -64,27 +109,30 @@ public class CheapSharkApiService {
         List<CheapSharkApiDto> cheapSharkApiDtos = pegarInformacoesNaApi(termo);
         List<CheapSharkLojasApi> cheapSharkLojasApis = validaBancoDeDados();
         List<CheapSharkJogosEPrecosApi> cheapSharkJogosEPrecosApis = new ArrayList<>();
+
+        Map<Long, CheapSharkLojasApi> mapLojas = new HashMap<>();
+        for (CheapSharkLojasApi cheapSharkLojasApi : cheapSharkLojasApis) {
+            mapLojas.put(cheapSharkLojasApi.getId(), cheapSharkLojasApi);
+        }
         if (cheapSharkApiDtos != null && !cheapSharkApiDtos.isEmpty()) {
             for (CheapSharkApiDto cheapSharkApiDto : cheapSharkApiDtos) {
                 CheapSharkJogosEPrecosApi cheapSharkJogosEPrecosApi = new CheapSharkJogosEPrecosApi(
                         cheapSharkApiDto.getNomeJogo(),
                         cheapSharkApiDto.getPrecoAtual(), cheapSharkApiDto.getPrecoOriginal(),
-                        cheapSharkApiDto.getDesconto(), cheapSharkApiDto.getStoreId(), null);
-
-                for (CheapSharkLojasApi cheapSharkLojasApi : cheapSharkLojasApis) {
-                    if (cheapSharkApiDto.getStoreId().equals(cheapSharkLojasApi.getIdLoja())) {
-                        cheapSharkJogosEPrecosApi.setCheapSharkLojasApi(cheapSharkLojasApi);
-                        cheapSharkLojasApi.getCheapSharkJogosEPrecos().add(cheapSharkJogosEPrecosApi);
-                    }
-
+                        cheapSharkApiDto.getDesconto(), cheapSharkApiDto.getStoreId(), null, LocalDateTime.now());
+                CheapSharkLojasApi cheapSharkLojasApi = mapLojas.get(cheapSharkApiDto.getStoreId());
+                if (cheapSharkLojasApi != null) {
+                    cheapSharkJogosEPrecosApi.setCheapSharkLojasApi(cheapSharkLojasApi);
+                    cheapSharkLojasApi.getCheapSharkJogosEPrecos().add(cheapSharkJogosEPrecosApi);
+                    cheapSharkJogosEPrecosApis.add(cheapSharkJogosEPrecosApi);
                 }
-                cheapSharkJogosEPrecosApis.add(cheapSharkJogosEPrecosApi);
 
             }
             this.cheapSharkJogosEPrecosApiRepository.saveAll(cheapSharkJogosEPrecosApis);
             return montaDto(cheapSharkJogosEPrecosApis);
 
         }
+        System.out.println(cheapSharkApiDtos);
         throw new ResponseStatusException(HttpStatus.NOT_FOUND,
                 "Nao foi encontrado resultado de precos com esse termo");
     }
