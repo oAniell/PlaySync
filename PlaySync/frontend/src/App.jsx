@@ -69,6 +69,7 @@ function App() {
           // Mesclar dados: manter dados RAWG + preços da Steam
           setSelectedGame({
             ...game,
+             id: steamGame.id,
             coverImageUrl: steamGame.coverImageUrl || game.coverImageUrl,
             backgroundImageUrl: steamGame.backgroundImageUrl || game.backgroundImageUrl,
             offers: steamGame.offers
