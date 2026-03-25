@@ -1,5 +1,6 @@
 {
   "rewrites": [
+    { "source": "/api-playsync/:path*", "destination": "http://136.248.116.43:8080/api-playsync/:path*" },
     { "source": "/(.*)", "destination": "/" }
   ]
 }
