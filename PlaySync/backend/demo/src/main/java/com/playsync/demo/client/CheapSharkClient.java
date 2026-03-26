@@ -35,4 +35,7 @@ public class CheapSharkClient {
         return webClient.get().uri(uri -> uri.path("/stores").build()).retrieve()
                 .bodyToFlux(CheapSharkApiStoresDto.class).collectList();
     }
+
+    /*
+    Todos os filtros de API estao centralizadas aqui no package de client. */
 }

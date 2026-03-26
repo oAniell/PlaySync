@@ -18,6 +18,7 @@ import com.playsync.demo.Entities.RawgApiBuscaTermo;
 import com.playsync.demo.client.CheapSharkClient;
 import com.playsync.demo.dtoresponse.CheapSharkApiDto;
 import com.playsync.demo.dtoresponse.CheapSharkApiStoresDto;
+import com.playsync.demo.dtoresponse.MergerCheapSharkGamesAndStores;
 import com.playsync.demo.dtoresponse.RawgApiBuscaTermoDTO;
 import com.playsync.demo.repository.CheapSharkJogosEPrecosApiRepository;
 import com.playsync.demo.repository.CheapSharkLojasApiRepository;
@@ -33,22 +34,23 @@ public class CheapSharkApiService {
     private final CheapSharkLojasApiRepository cheapSharkLojasApiRepository;
     private final CheapSharkJogosEPrecosApiRepository cheapSharkJogosEPrecosApiRepository;
 
-    public List<CheapSharkApiDto> principalMethod(String termo) {
+    public List<MergerCheapSharkGamesAndStores> principalMethod(String termo) {
         List<CheapSharkJogosEPrecosApi> cheapSharkApiBanco = this.cheapSharkJogosEPrecosApiRepository
                 .selectByTerm(termo);
+        List<CheapSharkLojasApi> cheapSharkLojasApis = validaBancoDeDados();
         if (cheapSharkApiBanco == null || cheapSharkApiBanco.isEmpty()) {
-            return validaTermo(termo);
+            return validaTermo(termo, cheapSharkLojasApis);
         }
-        return validaINformacaoNoBancoDeDados(cheapSharkApiBanco, termo);
+        return validaINformacaoNoBancoDeDados(cheapSharkApiBanco, termo, cheapSharkLojasApis);
     }
 
-    // testes de requisicoes
     public List<CheapSharkApiDto> pegarInformacoesNaApi(String termo) {
         return this.cheapSharkClient.buscarPrecoCheapShark(termo).block();
     }
 
-    public List<CheapSharkApiDto> validaINformacaoNoBancoDeDados(
-            List<CheapSharkJogosEPrecosApi> listaDeEntidadesNoBanco, String termo) {
+    public List<MergerCheapSharkGamesAndStores> validaINformacaoNoBancoDeDados(
+            List<CheapSharkJogosEPrecosApi> listaDeEntidadesNoBanco, String termo,
+            List<CheapSharkLojasApi> cheapSharkLojasApis) {
         List<CheapSharkJogosEPrecosApi> listaDeDesatualizados = validaItensDesatualizados(listaDeEntidadesNoBanco);
         if (listaDeDesatualizados != null && !listaDeDesatualizados.isEmpty()) {
             List<CheapSharkApiDto> buscaApi = pegarInformacoesNaApi(termo);
@@ -71,7 +73,7 @@ public class CheapSharkApiService {
             }
             this.cheapSharkJogosEPrecosApiRepository.saveAll(listaDeDesatualizados);
         }
-        return montaDto(listaDeEntidadesNoBanco);
+        return mergearApisCheapShark(listaDeEntidadesNoBanco, cheapSharkLojasApis);
 
     }
 
@@ -87,27 +89,10 @@ public class CheapSharkApiService {
         return listaDeItensDesatualizados;
     }
 
-    /*
-     * 3
-     * 
-     * 
-     * CONSTRUIR METODO QUE TEM O MESMO COMPORTAMENTO DO SERVIDO DO RAWG, ONDE TEM
-     * CACHE DE API E EVITA BUSCAR TODA VEZ NA API
-     * (duas opcoes, toda vez que requisitar nossa API apagar as informacoes no
-     * banco e recriar elas com a pesquisa ATualmente(custo é chamada de API
-     * gigante)
-     * ou fazer a mesma regra do rawg aplicar aqui, porem o codigo vai ficar
-     * extenso))
-     * 
-     * 
-     * 
-     * 
-     */
-
     @Transactional
-    public List<CheapSharkApiDto> validaTermo(String termo) {
+    public List<MergerCheapSharkGamesAndStores> validaTermo(String termo,
+            List<CheapSharkLojasApi> cheapSharkLojasApis) {
         List<CheapSharkApiDto> cheapSharkApiDtos = pegarInformacoesNaApi(termo);
-        List<CheapSharkLojasApi> cheapSharkLojasApis = validaBancoDeDados();
         List<CheapSharkJogosEPrecosApi> cheapSharkJogosEPrecosApis = new ArrayList<>();
 
         Map<Long, CheapSharkLojasApi> mapLojas = new HashMap<>();
@@ -129,15 +114,14 @@ public class CheapSharkApiService {
 
             }
             this.cheapSharkJogosEPrecosApiRepository.saveAll(cheapSharkJogosEPrecosApis);
-            return montaDto(cheapSharkJogosEPrecosApis);
-
+            return mergearApisCheapShark(cheapSharkJogosEPrecosApis, cheapSharkLojasApis);
+            /*
+            o sistema  */
         }
         System.out.println(cheapSharkApiDtos);
-        throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-                "Nao foi encontrado resultado de precos com esse termo");
+        return new ArrayList<>();
     }
 
-    // testes de requisicoes
     public List<CheapSharkApiStoresDto> pegarLojas() {
         return this.cheapSharkClient.buscarLojasCheapShark().block();
     }
@@ -175,7 +159,27 @@ public class CheapSharkApiService {
         return listaDto;
     }
 
-    
-   
+    private List<MergerCheapSharkGamesAndStores> mergearApisCheapShark(List<CheapSharkJogosEPrecosApi> listaDeJogos,
+            List<CheapSharkLojasApi> cheapSharkLojasApis) {
+        Map<Long, CheapSharkLojasApi> mapperLojas = new HashMap<>();
+        List<MergerCheapSharkGamesAndStores> mergerCheapSharkGamesAndStores = new ArrayList<>();
+        for (CheapSharkLojasApi cheapSharkLojasApi : cheapSharkLojasApis) {
+            mapperLojas.put(cheapSharkLojasApi.getIdLoja(), cheapSharkLojasApi);
+        }
+        for (CheapSharkJogosEPrecosApi cheapSharkJogosEPrecosApi : listaDeJogos) {
+            CheapSharkLojasApi cheapSharkLojasApi = mapperLojas.get(cheapSharkJogosEPrecosApi.getStoreId());
+            if (cheapSharkLojasApi != null) {
+                mergerCheapSharkGamesAndStores.add(new MergerCheapSharkGamesAndStores(
+                        cheapSharkJogosEPrecosApi.getNomeJogo(), cheapSharkJogosEPrecosApi.getPrecoAtual(),
+                        cheapSharkJogosEPrecosApi.getPrecoOriginal(), cheapSharkJogosEPrecosApi.getDesconto(),
+                        cheapSharkJogosEPrecosApi.getStoreId(), cheapSharkLojasApi.getNomeLoja()));
+            }
+        }
+        return mergerCheapSharkGamesAndStores;
+    }
+    /*
+     * IMPLEMENTAR IDEIA DE LISTA DE LOJAS PARA CADA JOGO SE NAO RETORNA DIVERSOS
+     * OBJETOS CADA UM SENDO PARA CADA LOJA, POLUINDO O RETORNO PARA O USUARIO.
+     */
 
 }

@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.playsync.demo.dtoresponse.BuscaPorTermoDTO;
 import com.playsync.demo.dtoresponse.CheapSharkApiDto;
+import com.playsync.demo.dtoresponse.MergerCheapSharkGamesAndStores;
 import com.playsync.demo.dtoresponse.TotalItensBuscadosRawgDTO;
 import com.playsync.demo.service.ApiSteam;
 import com.playsync.demo.service.CheapSharkApiService;
@@ -44,9 +45,8 @@ public class BuscaPorTermoController {
 	}
 
 	@GetMapping("/get-prices")
-	public List<CheapSharkApiDto> buscarPrecosCheapShark(@RequestParam String termo) {
-		return this.cheapSharkApi.pegarInformacoesNaApi(termo);
+	public List<MergerCheapSharkGamesAndStores> buscarPrecosCheapShark(@RequestParam String termo) {
+		return this.cheapSharkApi.principalMethod(termo);
 	}
 
-	
 }

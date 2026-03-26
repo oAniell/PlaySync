@@ -35,5 +35,9 @@ public class RawgApiBuscaTermoDTO {
     private List<GenerosApiRawgDTO> generosApiRawgDTOs = new ArrayList<>();
     @JsonProperty("stores")
     private List<StoresRawg> storesRawgs = new ArrayList<>();
-
+    /*
+     * realizamos o mapeamento de maneira que pegassemos apenas aqueles campos que
+     * se tornam relevantes tanto para o ususario que vai receber a info no front,
+     * quanto para o banco de dados
+     */
 }
