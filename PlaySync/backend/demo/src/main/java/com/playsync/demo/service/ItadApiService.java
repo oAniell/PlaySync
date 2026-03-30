@@ -29,8 +29,10 @@ public class ItadApiService {
     public List<ItadBuscaPorTermoDto> principalMethod(String termoString) {
         List<ItadBuscaPorTermo> buscaNoBanco = this.itadBuscaPorTermoRepository.findByNome(termoString);
         if (buscaNoBanco == null || buscaNoBanco.isEmpty()) {
-            persisteInformacaoNoBanco(buscaNaApi(termoString));
+            //persisteInformacaoNoBanco(buscaNaApi(termoString));
+            return null;
         }
+        return null;
 
     }
 
@@ -39,7 +41,7 @@ public class ItadApiService {
     }
 
     private void validaInformacaoNoBanco(List<ItadBuscaPorTermo> listaDeTermos) {
-        
+
     }
 
     private void persisteInformacaoNoBanco(List<ItadBuscaPorTermoDto> itenBuscaPorTermoDtos) {
