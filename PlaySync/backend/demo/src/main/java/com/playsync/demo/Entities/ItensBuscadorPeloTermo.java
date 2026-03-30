@@ -4,12 +4,9 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.springframework.stereotype.Service;
 
-import com.playsync.demo.dtoresponse.PrecoDeItensDTO;
 import com.playsync.demo.enums.ControllerSupport;
 
-import jakarta.annotation.Generated;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

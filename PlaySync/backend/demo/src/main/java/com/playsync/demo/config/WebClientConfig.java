@@ -18,26 +18,49 @@ public class WebClientConfig {
 				.build();
 	}
 
-	@Bean
-	public WebClient rawgCliente(WebClient.Builder builder) {
-		return builder.baseUrl("https://api.rawg.io/api").build();
-	}
-
-	@Bean
-	public WebClient cheapSharkApiCliente(WebClient.Builder builder) {
-		return builder.baseUrl("https://www.cheapshark.com/api/1.0").build();
-	}
 
 	/*
 	 * https://economia.awesomeapi.com.br/json/last/USD-BRL -- cotacao do dolar
 	 */
+	
 	@Bean
-	public WebClient cotacaoDolarAwesomeApiCliente(WebClient.Builder builder) {
-		return builder.baseUrl("https://economia.awesomeapi.com.br/json").build();
+	public WebClient buscaPorTermoITADCliente(WebClient.Builder builder) {
+		return builder.baseUrl("https://api.isthereanydeal.com/games").build();
 	}
 	/*
-	 * aqui esta centralizado todas as BASEURLs que utilizamos, desde a cotacao do
-	 * dolar ate as APIs em questao da busca de jogos nas plataformas.
+	 * Como funciona na prática
+	 * 1️ Você precisa do ID do jogo (não o nome)
 	 * 
+	 * Passe primeiro pelo endpoint de busca de jogo para pegar o ID:
+	 * 
+	 * Buscar jogo por termo (GET)
+	 * GET
+	 * https://api.isthereanydeal.com/games/search/v1?key=SEU_API_KEY&title=elden%
+	 * 20ring -- usuario passará aqui o termo do jogo
+	 * retornara varios objetos que contem a tag ID que passaremos no price
+	 * 
+	 * Isso te retorna um array de jogos com os respectivos IDs.
+	 * 
+	 * 2️Depois usa o ID para chamar preços
+	 * Exemplo de requisição POST para preços
+	 * 
+	 * Endpoint:
+	 * 
+	 * POST https://api.isthereanydeal.com/games/prices/v3
+	 * 
+	 * Headers obrigatórios:
+	 * Content-Type: application/json
+	 * Body (JSON):
+	 * [
+	 * "018d937f-07fc-72ed-8517-d8e24cb1eb22"
+	 * ]
+	 * Esse array deve conter IDs retornados pelo search/lookup.
+	 * 
+	 * Então a URL fica:
+	 * POST
+	 * https://api.isthereanydeal.com/games/prices/v3?key=SEU_API_KEY&country=BR
+	 * 
+	 * 
+	 * api key = baf038a8b8a8039c1e5f0def483913f055640f6e
 	 */
 }
