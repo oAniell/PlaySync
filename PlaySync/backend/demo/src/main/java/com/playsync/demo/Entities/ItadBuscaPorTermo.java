@@ -1,5 +1,6 @@
 package com.playsync.demo.Entities;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,14 +36,18 @@ public class ItadBuscaPorTermo {
     private String nomeJogo;
     @Column(name = "tipo_do_item")
     private String tipoDoItem;
+    @Column(name = "data_last_search")
+    private LocalDateTime dataLastSearch;
     @OneToMany(mappedBy = "itadBuscaPorTermo", cascade = CascadeType.ALL, orphanRemoval = true)
     List<ItadAssetsDeItens> assetsItens = new ArrayList<>();
 
-    public ItadBuscaPorTermo(String idGame, String slug, String nomeJogo, String tipoDoItem) {
+    public ItadBuscaPorTermo(String idGame, String slug, String nomeJogo, String tipoDoItem,
+            LocalDateTime dataLastSearch) {
         this.idGame = idGame;
         this.slug = slug;
         this.nomeJogo = nomeJogo;
         this.tipoDoItem = tipoDoItem;
+        this.dataLastSearch = dataLastSearch;
     }
 
 }

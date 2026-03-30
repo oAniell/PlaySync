@@ -1,5 +1,7 @@
 package com.playsync.demo.Entities;
 
+import java.time.LocalDateTime;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import jakarta.persistence.Entity;
@@ -27,11 +29,14 @@ public class ItadAssetsDeItens {
     @ManyToOne
     @JoinColumn(name = "id_itad_busca_por_termo")
     private ItadBuscaPorTermo itadBuscaPorTermo;
+    private LocalDateTime dataLastSearch;
 
-    public ItadAssetsDeItens(String imagem01, String arteSecundaria, ItadBuscaPorTermo itadBuscaPorTermo) {
+    public ItadAssetsDeItens(String imagem01, String arteSecundaria, ItadBuscaPorTermo itadBuscaPorTermo,
+            LocalDateTime dataLastSearch) {
         this.imagem01 = imagem01;
         this.arteSecundaria = arteSecundaria;
         this.itadBuscaPorTermo = itadBuscaPorTermo;
+        this.dataLastSearch = dataLastSearch;
     }
 
 }
