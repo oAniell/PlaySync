@@ -11,7 +11,7 @@ import com.playsync.demo.Entities.ItadBuscaPorTermo;
 
 @Repository
 public interface ItadBuscaPorTermoRepository extends CrudRepository<ItadBuscaPorTermo, Long> {
-    @Query("SELECT E FROM ItadBuscaPorTermo E WHERE E.nomeJogo = :termo")
+    @Query("SELECT E FROM ItadBuscaPorTermo E WHERE LOWER(E.nomeJogo) LIKE %:termo%")
     List<ItadBuscaPorTermo> findByNome(@Param("termo") String termo);
 
 }

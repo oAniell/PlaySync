@@ -14,6 +14,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -38,16 +39,17 @@ public class ItadBuscaPorTermo {
     private String tipoDoItem;
     @Column(name = "data_last_search")
     private LocalDateTime dataLastSearch;
-    @OneToMany(mappedBy = "itadBuscaPorTermo", cascade = CascadeType.ALL, orphanRemoval = true)
-    List<ItadAssetsDeItens> assetsItens = new ArrayList<>();
+    @OneToOne(mappedBy = "itadBuscaPorTermo", cascade = CascadeType.ALL, orphanRemoval = true)
+    private ItadAssetsDeItens assetsItens;
 
     public ItadBuscaPorTermo(String idGame, String slug, String nomeJogo, String tipoDoItem,
-            LocalDateTime dataLastSearch) {
+            LocalDateTime dataLastSearch, ItadAssetsDeItens assetsDeItens) {
         this.idGame = idGame;
         this.slug = slug;
         this.nomeJogo = nomeJogo;
         this.tipoDoItem = tipoDoItem;
         this.dataLastSearch = dataLastSearch;
+        this.assetsItens = assetsDeItens;
     }
 
 }

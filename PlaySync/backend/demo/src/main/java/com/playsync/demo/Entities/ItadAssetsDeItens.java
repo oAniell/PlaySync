@@ -10,6 +10,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -26,15 +27,17 @@ public class ItadAssetsDeItens {
     private Long id;
     private String imagem01;
     private String arteSecundaria;
-    @ManyToOne
+    private String idGame;
+    @OneToOne
     @JoinColumn(name = "id_itad_busca_por_termo")
     private ItadBuscaPorTermo itadBuscaPorTermo;
     private LocalDateTime dataLastSearch;
 
-    public ItadAssetsDeItens(String imagem01, String arteSecundaria, ItadBuscaPorTermo itadBuscaPorTermo,
+    public ItadAssetsDeItens(String imagem01, String arteSecundaria, String idGame, ItadBuscaPorTermo itadBuscaPorTermo,
             LocalDateTime dataLastSearch) {
         this.imagem01 = imagem01;
         this.arteSecundaria = arteSecundaria;
+        this.idGame = idGame;
         this.itadBuscaPorTermo = itadBuscaPorTermo;
         this.dataLastSearch = dataLastSearch;
     }
