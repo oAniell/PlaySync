@@ -42,6 +42,11 @@ public class ApiSteam {
 		
 		System.out.println("Validacao: " + validacao(itensNoBanco));
 
+		if (itensNoBanco == null || itensNoBanco.isEmpty()) {
+			System.out.println("Banco vazio - chamando API externa para termo: " + termo);
+			return metodoChamaApiEPersiste(termo);
+		}
+		
 		if (validacao(itensNoBanco)) {
 			return atualiza(itensNoBanco, termo);
 		}
