@@ -21,8 +21,7 @@ public class ItadClient {
      * 
      * Buscar jogo por termo (GET)
      * GET
-     * https://api.isthereanydeal.com/games/search/v1?key=SEU_API_KEY&title=elden%
-     * 20ring -- usuario passará aqui o termo do jogo
+     * https://api.isthereanydeal.com/games/search/v1?key=SEU_API_KEY&title=elden%20ring -- usuario passará aqui o termo do jogo
      * retornara varios objetos que contem a tag ID que passaremos no price
      * 
      * Isso te retorna um array de jogos com os respectivos IDs.
@@ -40,6 +39,9 @@ public class ItadClient {
      * [
      * "018d937f-07fc-72ed-8517-d8e24cb1eb22"
      * ]
+     * */
+    
+      /*
      * Esse array deve conter IDs retornados pelo search/lookup.
      * 
      * Então a URL fica:
@@ -59,5 +61,7 @@ public class ItadClient {
                 .queryParam("key", "baf038a8b8a8039c1e5f0def483913f055640f6e").build()).retrieve()
                 .bodyToFlux(ItadBuscaPorTermoDto.class).collectList();
     }
+
+    
 
 }

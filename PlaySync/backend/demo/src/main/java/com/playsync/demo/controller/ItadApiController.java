@@ -16,9 +16,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @RequestMapping("/api-playsync/v2")
 public class ItadApiController {
-
     private final ItadApiService itadApiService;
-
+    
     @GetMapping("/search/")
     public List<ItadBuscaPorTermoDto> buscaPorTermo(@RequestParam String termo) {
         return null;
