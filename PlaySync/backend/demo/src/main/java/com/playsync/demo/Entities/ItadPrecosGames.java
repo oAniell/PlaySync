@@ -29,7 +29,7 @@ public class ItadPrecosGames {
     private Double precoJogoBruto;
     @Column(name = "percentual_desconto")
     private Double percentualDesconto;
-    
+
     /*
      * id → identificador único do jogo (base de tudo)
      * price.amount → preço atual da oferta
@@ -43,7 +43,4 @@ public class ItadPrecosGames {
      * platforms → sistemas compatíveis (ex: Windows)
      */
 
-  
-
-    
 }
