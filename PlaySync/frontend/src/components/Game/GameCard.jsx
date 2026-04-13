@@ -26,9 +26,9 @@ function GameCard({ game, onClick, variant = 'search' }) {
       onClick={() => onClick(game)}
       onKeyDown={(e) => e.key === 'Enter' && onClick(game)}
       className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden cursor-pointer
-                 hover:border-purple-500/50 hover:scale-[1.03] hover:shadow-xl hover:shadow-purple-950/40
+                 hover:border-blue-500/50 hover:scale-[1.03] hover:shadow-xl hover:shadow-blue-950/40
                  transition-all duration-300 group
-                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
+                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
     >
       {/* Image */}
       <div className="relative overflow-hidden">
@@ -42,7 +42,7 @@ function GameCard({ game, onClick, variant = 'search' }) {
         <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent opacity-70" />
 
         {!!game.rating && (
-          <div className="absolute top-2 right-2 bg-purple-600/90 backdrop-blur-sm text-white text-xs font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+          <div className="absolute top-2 right-2 bg-linear-to-r from-blue-600/90 to-cyan-600/90 backdrop-blur-sm text-white text-xs font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
             <Star className="w-3 h-3 fill-current" />
             <span className="font-mono">{typeof game.rating === 'number' ? game.rating.toFixed(1) : game.rating}</span>
           </div>
@@ -51,7 +51,7 @@ function GameCard({ game, onClick, variant = 'search' }) {
 
       {/* Content */}
       <div className="p-3">
-        <h4 className="font-semibold text-sm truncate mb-1 group-hover:text-purple-400 transition-colors duration-200">
+        <h4 className="font-semibold text-sm truncate mb-1 group-hover:text-blue-400 transition-colors duration-200">
           {game.title}
         </h4>
         <div className="flex items-center justify-between gap-2">

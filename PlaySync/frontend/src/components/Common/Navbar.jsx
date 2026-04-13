@@ -10,12 +10,12 @@ function Navbar({ onReset }) {
           aria-label="Ir para o início"
         >
           <Gamepad2
-            className="w-7 h-7 text-purple-400 group-hover:text-purple-300 transition-colors duration-200"
+            className="w-7 h-7 text-blue-400 group-hover:text-blue-300 transition-colors duration-200"
           />
           <span
             className="text-xl font-black font-display"
             style={{
-              background: 'linear-gradient(135deg, #c4b5fd 0%, #818cf8 50%, #67e8f9 100%)',
+              background: 'linear-gradient(135deg, #60a5fa 0%, #3b82f6 55%, #06b6d4 100%)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
               backgroundClip: 'text',

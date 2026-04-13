@@ -20,7 +20,7 @@ function PriceOffer({ offer, gameId, gameTitle }) {
         transition-all duration-200 hover:bg-zinc-900/70
         ${isHistoricalLow
           ? 'border-emerald-500/40 shadow-lg shadow-emerald-950/30'
-          : 'border-zinc-800 hover:border-purple-500/30'}
+          : 'border-zinc-800 hover:border-blue-500/30'}
       `}
     >
       {/* ── Store info ──────────────────────────────── */}
@@ -97,8 +97,9 @@ function PriceOffer({ offer, gameId, gameTitle }) {
           target="_blank"
           rel="noopener noreferrer"
           aria-label={offer.dealUrl ? `Comprar ${gameTitle}` : `Ver ${gameTitle} na Steam`}
-          className="bg-purple-600 hover:bg-purple-500 text-white px-3.5 py-2.5 rounded-xl
-                     transition-all duration-200 hover:shadow-lg hover:shadow-purple-900/40
+          className="bg-linear-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400
+                     text-white px-3.5 py-2.5 rounded-xl
+                     transition-all duration-200 hover:shadow-lg hover:shadow-blue-900/40
                      flex items-center gap-2 text-sm font-semibold whitespace-nowrap"
         >
           <span>{offer.dealUrl ? 'Comprar' : 'Ver na Steam'}</span>

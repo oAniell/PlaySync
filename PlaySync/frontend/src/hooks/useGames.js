@@ -77,80 +77,38 @@ export const useGames = () => {
     }
   }, []);
 
-  // Carregar jogos em destaque (da RAWG API)
-  const loadFeatured = useCallback(async () => {
-    setIsLoading(true);
-    
-    try {
-      // Chama a API RAWG para buscar jogo em destaque
-      const data = await gameService.getFeaturedGame();
-      console.log('RAWG Featured response:', JSON.stringify(data, null, 2));
-      
-      // Adapta os dados para o formato esperado pelo frontend
-      if (data) {
-        const imgUrl = data.img || data.tiny_image || data.background_image || '';
-        console.log('Featured Image URL:', imgUrl);
-        const normalizedUrl = normalizeImageUrl(imgUrl);
-        console.log('Featured Normalized URL:', normalizedUrl);
-        
-        const adaptedFeatured = {
-          id: data.idGame || data.id || 0,
-          title: data.name || 'Sem título',
-          coverImageUrl: normalizedUrl,
-          backgroundImageUrl: normalizedUrl,
-          genres: data.nomeGeneros || data.genres || '',
-          rating: data.avaliacao || data.rating || 0,
-          platforms: data.nomePlataformas || data.platforms || '',
-          // Adicionar ofertas vazias para evitar erros
-          offers: [],
-        };
-        console.log('Adapted Featured:', adaptedFeatured);
-        setFeatured(adaptedFeatured);
-      }
-    } catch (err) {
-      console.error('Erro ao carregar jogo em destaque:', err);
-      setError(err.message);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const adaptGame = (data) => {
+    const imgUrl = data.img || data.tiny_image || data.background_image || '';
+    const normalizedUrl = normalizeImageUrl(imgUrl);
+    return {
+      id: data.idGame || data.id || 0,
+      title: data.name || 'Sem título',
+      coverImageUrl: normalizedUrl,
+      backgroundImageUrl: normalizedUrl,
+      genres: data.rawgDetails?.nomeGeneros || data.nomeGeneros || data.genres || '',
+      rating: data.rawgDetails?.avaliacao || data.avaliacao || data.rating || 0,
+      platforms: data.rawgDetails?.nomePlataformas || data.nomePlataformas || data.platforms || '',
+      offers: [],
+    };
+  };
 
-  // Carregar jogos em tendência (da RAWG API)
-  const loadTrending = useCallback(async () => {
+  // Carrega featured + trending em uma única chamada — sem duplicatas garantidas pelo backend
+  const loadHomeData = useCallback(async () => {
     setIsLoading(true);
-    
+
     try {
-      // Chama a API RAWG para buscar jogos em tendência
-      const data = await gameService.getTrendingGames(10);
-      console.log('RAWG Trending response:', JSON.stringify(data, null, 2));
-      
-      // Adapta os dados para o formato esperado pelo frontend
-      if (data && Array.isArray(data)) {
-        const adaptedTrending = data.map(game => {
-          // Debug cada campo
-          console.log('Game from RAWG:', JSON.stringify(game));
-          const imgUrl = game.img || game.tiny_image || game.background_image || '';
-          console.log('Image URL to normalize:', imgUrl);
-          const normalizedUrl = normalizeImageUrl(imgUrl);
-          console.log('Normalized URL:', normalizedUrl);
-          
-          return {
-            id: game.idGame || game.id || 0,
-            title: game.name || 'Sem título',
-            coverImageUrl: normalizedUrl,
-            backgroundImageUrl: normalizedUrl,
-            genres: game.nomeGeneros || game.genres || '',
-            rating: game.avaliacao || game.rating || 0,
-            platforms: game.nomePlataformas || game.platforms || '',
-            // Adicionar ofertas vazias para evitar erros
-            offers: [],
-          };
-        });
-        console.log('Adapted trending:', adaptedTrending);
-        setTrending(adaptedTrending);
+      const data = await gameService.getHomeData(10);
+      console.log('Home data response:', JSON.stringify(data, null, 2));
+
+      if (data?.featured) {
+        setFeatured(adaptGame(data.featured));
+      }
+
+      if (data?.trending && Array.isArray(data.trending)) {
+        setTrending(data.trending.map(adaptGame));
       }
     } catch (err) {
-      console.error('Erro ao carregar jogos em tendência:', err);
+      console.error('Erro ao carregar dados da home:', err);
       setError(err.message);
     } finally {
       setIsLoading(false);
@@ -188,8 +146,7 @@ export const useGames = () => {
     isLoading,
     error,
     search,
-    loadFeatured,
-    loadTrending,
+    loadHomeData,
     selectGame,
     clearSelection,
     clearSearch,

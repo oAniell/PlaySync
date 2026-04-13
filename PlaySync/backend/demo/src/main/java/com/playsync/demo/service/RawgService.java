@@ -1,15 +1,19 @@
 package com.playsync.demo.service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import com.playsync.demo.client.RawgClient;
+import com.playsync.demo.dtoresponse.HomeResponseDTO;
 import com.playsync.demo.dtoresponse.ItensFiltradosPeloTermoDTO;
 import com.playsync.demo.dtoresponse.RawgGame;
 import com.playsync.demo.dtoresponse.RawgGameDetailDTO;
 import com.playsync.demo.dtoresponse.RawgGameResponse;
+import com.playsync.demo.repository.ItensBuscadosPeloTermoRepository;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -19,19 +23,64 @@ import reactor.core.publisher.Mono;
 public class RawgService {
 
 	private final RawgClient rawgClient;
+	private final ItensBuscadosPeloTermoRepository itensRepository;
 
 	/**
-	 * Busca o jogo em destaque (mais popular)
-	 * Retorna apenas o primeiro jogo da lista de jogos populares
+	 * Busca o jogo em destaque baseado na atividade do site (último 30 dias).
+	 * Pega o jogo mais pesquisado pelos usuários e busca seus detalhes no RAWG.
+	 * Fallback: primeiro jogo do trending da RAWG caso não haja buscas suficientes.
 	 */
 	public Mono<ItensFiltradosPeloTermoDTO> getFeaturedGame() {
-		return rawgClient.getPopularGames(1)
+		LocalDateTime trintaDiasAtras = LocalDateTime.now().minusDays(30);
+		List<String> maisSearchados = itensRepository.findMostSearchedGameNames(
+				trintaDiasAtras, PageRequest.of(0, 1));
+
+		if (!maisSearchados.isEmpty()) {
+			return rawgClient.searchGameByName(maisSearchados.get(0))
+					.flatMap(response -> {
+						if (response.getResults() != null && !response.getResults().isEmpty()) {
+							return Mono.just(mapToDto(response.getResults().get(0)));
+						}
+						return getFeaturedFallback();
+					});
+		}
+
+		return getFeaturedFallback();
+	}
+
+	private Mono<ItensFiltradosPeloTermoDTO> getFeaturedFallback() {
+		return rawgClient.getTrendingGames(2)
 				.map(response -> {
 					if (response.getResults() == null || response.getResults().isEmpty()) {
 						return null;
 					}
-					return mapToDto(response.getResults().get(0));
+					// índice 0 será o primeiro da lista de trending abaixo — usa o índice 1 para não repetir
+					int idx = response.getResults().size() > 1 ? 1 : 0;
+					return mapToDto(response.getResults().get(idx));
 				});
+	}
+
+	/**
+	 * Retorna featured + trending em uma única chamada coordenada.
+	 * Garante que o jogo em destaque não aparece na lista de trending.
+	 */
+	public Mono<HomeResponseDTO> getHomeData(int trendingLimit) {
+		return getFeaturedGame().flatMap(featured ->
+			rawgClient.getTrendingGames(trendingLimit + 1)
+				.map(response -> {
+					List<ItensFiltradosPeloTermoDTO> trending;
+					if (response.getResults() == null || response.getResults().isEmpty()) {
+						trending = List.of();
+					} else {
+						trending = response.getResults().stream()
+								.map(this::mapToDto)
+								.filter(g -> featured == null || !g.getName().equalsIgnoreCase(featured.getName()))
+								.limit(trendingLimit)
+								.collect(Collectors.toList());
+					}
+					return new HomeResponseDTO(featured, trending);
+				})
+		);
 	}
 
 	/**

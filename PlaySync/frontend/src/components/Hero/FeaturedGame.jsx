@@ -37,7 +37,7 @@ function FeaturedGame({ featured, onClick, isLoading }) {
         onClick={() => onClick(featured)}
         onKeyDown={(e) => e.key === 'Enter' && onClick(featured)}
         className="relative w-full h-72 md:h-96 rounded-2xl overflow-hidden cursor-pointer group
-                   focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500
+                   focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500
                    focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
       >
         {/* Background */}
@@ -84,7 +84,7 @@ function FeaturedGame({ featured, onClick, isLoading }) {
                 </span>
               </div>
             )}
-            <div className="flex items-center gap-2 text-sm font-semibold text-purple-400 group-hover:text-purple-300 transition-colors">
+            <div className="flex items-center gap-2 text-sm font-semibold text-blue-400 group-hover:text-blue-300 transition-colors">
               <span>Ver preços</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-200" />
             </div>

@@ -35,7 +35,7 @@ function ScreenshotsGallery({ screenshots }) {
             onClick={() => setActive(i)}
             className={`shrink-0 w-24 h-14 rounded overflow-hidden border-2 transition-all duration-150
               ${i === active
-                ? 'border-purple-500 opacity-100'
+                ? 'border-blue-500 opacity-100'
                 : 'border-zinc-700 opacity-60 hover:opacity-90 hover:border-zinc-500'
               }`}
           >
@@ -81,7 +81,7 @@ function GameDetail({ game, onBack }) {
             <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 via-zinc-900/20 to-transparent" />
 
             {!!game.rating && (
-              <div className="absolute top-3 right-3 bg-purple-600/90 backdrop-blur-sm text-white text-xs font-bold px-2.5 py-1 rounded-full flex items-center gap-1.5">
+              <div className="absolute top-3 right-3 bg-linear-to-r from-blue-600/90 to-cyan-600/90 backdrop-blur-sm text-white text-xs font-bold px-2.5 py-1 rounded-full flex items-center gap-1.5">
                 <Star className="w-3.5 h-3.5 fill-current" />
                 <span className="font-mono">
                   {typeof game.rating === 'number' ? game.rating.toFixed(1) : game.rating}
@@ -102,7 +102,7 @@ function GameDetail({ game, onBack }) {
                 {genres.map((g, i) => (
                   <span
                     key={i}
-                    className="text-xs font-medium bg-purple-950/60 text-purple-300 border border-purple-800/50 px-2 py-0.5 rounded-full"
+                    className="text-xs font-medium bg-blue-950/60 text-blue-300 border border-blue-800/50 px-2 py-0.5 rounded-full"
                   >
                     {g}
                   </span>
@@ -188,8 +188,9 @@ function GameDetail({ game, onBack }) {
                 href={`https://store.steampowered.com/search/?term=${encodeURIComponent(game.title)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="bg-purple-600 hover:bg-purple-500 text-white px-5 py-2.5 rounded-xl
-                           transition-all duration-200 hover:shadow-lg hover:shadow-purple-900/40
+                className="bg-linear-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400
+                           text-white px-5 py-2.5 rounded-xl
+                           transition-all duration-200 hover:shadow-lg hover:shadow-blue-900/40
                            inline-flex items-center gap-2 text-sm font-medium"
               >
                 Buscar na Steam

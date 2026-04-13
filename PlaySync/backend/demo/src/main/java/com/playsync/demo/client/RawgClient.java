@@ -1,5 +1,8 @@
 package com.playsync.demo.client;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -35,16 +38,36 @@ public class RawgClient {
 	}
 
 	/**
-	 * Busca jogos em tendência (mais jogados nos últimos tempo)
-	 * Endpoint: https://api.rawg.io/api/games?key=API_KEY&dates=2024-01-01,2025-12-31&ordering=-added
+	 * Busca jogos em tendência (mais jogados nos últimos 12 meses)
+	 * Endpoint: https://api.rawg.io/api/games?key=API_KEY&dates={12_meses_atras},{hoje}&ordering=-added
 	 */
 	public Mono<RawgGameResponse> getTrendingGames(int pageSize) {
+		String hoje = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE);
+		String seisMesesAtras = LocalDate.now().minusMonths(6).format(DateTimeFormatter.ISO_LOCAL_DATE);
+		String dateRange = seisMesesAtras + "," + hoje;
+
 		return this.rawgWebClient.get()
 				.uri(uri -> uri.path("/games")
 						.queryParam("key", apiKey)
-						.queryParam("dates", "2024-01-01,2025-12-31")
+						.queryParam("dates", dateRange)
 						.queryParam("ordering", "-added")
 						.queryParam("page_size", pageSize)
+						.build())
+				.retrieve()
+				.bodyToMono(RawgGameResponse.class);
+	}
+
+	/**
+	 * Busca jogo por nome exato
+	 * Endpoint: https://api.rawg.io/api/games?key=API_KEY&search={name}&page_size=1&exact=true
+	 */
+	public Mono<RawgGameResponse> searchGameByName(String name) {
+		return this.rawgWebClient.get()
+				.uri(uri -> uri.path("/games")
+						.queryParam("key", apiKey)
+						.queryParam("search", name)
+						.queryParam("page_size", 1)
+						.queryParam("search_exact", true)
 						.build())
 				.retrieve()
 				.bodyToMono(RawgGameResponse.class);

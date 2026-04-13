@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.playsync.demo.dtoresponse.HomeResponseDTO;
 import com.playsync.demo.dtoresponse.ItensFiltradosPeloTermoDTO;
 import com.playsync.demo.service.RawgService;
 
@@ -20,6 +21,16 @@ import lombok.RequiredArgsConstructor;
 public class RawgController {
 
 	private final RawgService rawgService;
+
+	/**
+	 * Endpoint combinado: retorna featured + trending sem duplicatas
+	 * GET /api-playsync/home?trendingLimit=10
+	 */
+	@GetMapping("/home")
+	public HomeResponseDTO getHome(
+			@RequestParam(defaultValue = "10") int trendingLimit) {
+		return rawgService.getHomeData(trendingLimit).block();
+	}
 
 	/**
 	 * Endpoint para buscar o jogo em destaque (mais popular)

@@ -48,14 +48,12 @@ function App() {
     error,
     search,
     clearSearch,
-    loadFeatured,
-    loadTrending,
+    loadHomeData,
   } = useGames();
 
   useEffect(() => {
-    loadFeatured();
-    loadTrending();
-  }, [loadFeatured, loadTrending]);
+    loadHomeData();
+  }, [loadHomeData]);
 
   // ── Handlers ──────────────────────────────────────────────
   const handleSearch = async (e) => {
@@ -98,6 +96,7 @@ function App() {
     }
 
     setSelectedGame(enrichWithMockData(enrichedGame));
+    window.scrollTo({ top: 0, behavior: 'instant' });
   };
 
   // ── Derived state ─────────────────────────────────────────
@@ -122,7 +121,7 @@ function App() {
             <h1 className="text-5xl md:text-7xl font-black font-display mb-4 tracking-tight leading-none">
               <span
                 style={{
-                  background: 'linear-gradient(135deg, #c4b5fd 0%, #818cf8 55%, #67e8f9 100%)',
+                  background: 'linear-gradient(135deg, #60a5fa 0%, #3b82f6 55%, #06b6d4 100%)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                   backgroundClip: 'text',
