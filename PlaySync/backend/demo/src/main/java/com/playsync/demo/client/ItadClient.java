@@ -63,4 +63,7 @@ public class ItadClient {
                 .bodyToFlux(ItadBuscaPorTermoDto.class).collectList();
     }
 
+
+
+
 }
