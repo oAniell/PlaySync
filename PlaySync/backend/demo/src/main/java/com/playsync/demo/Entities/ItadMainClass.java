@@ -11,22 +11,17 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
+@Table(name = "itad_main_class")
 @Getter
 @Setter
 @NoArgsConstructor
-@Table(name = "drm_itad")
-public class DrmItad {
+public class ItadMainClass {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @Column(name = "id_drm")
-    private Long idDrm;
-    @Column(name = "name")
-    private String nome;
+    @Column(name = "id_game")
+    private String idGame;
 
-    public DrmItad(Long idDrm, String nome) {
-        this.idDrm = idDrm;
-        this.nome = nome;
-    }
+    
 
 }

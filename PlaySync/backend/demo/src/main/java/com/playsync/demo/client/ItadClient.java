@@ -13,6 +13,8 @@ import reactor.core.publisher.Mono;
 @Service
 public class ItadClient {
 
+    
+
     /*
      * Como funciona na prática
      * 1️ Você precisa do ID do jogo (não o nome)

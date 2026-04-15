@@ -1,8 +1,5 @@
 package com.playsync.demo.Entities;
 
-import org.hibernate.annotations.ManyToAny;
-
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -15,28 +12,22 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "itad_plataformas")
+@Table(name = "itad_price")
 @Getter
 @Setter
 @NoArgsConstructor
-public class ItadPlataforms {
-
+public class ItadPrice {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @Column(name = "id_plataforma")
-    private Long idPlataforma;
-    @Column(name = "nome_plataforma")
-    private String nomePlataforma;
+    private Double preco;
     @ManyToOne
     @JoinColumn(name = "id_itad_deals")
     private ItadDeals itadDeals;
-    public ItadPlataforms(Long idPlataforma, String nomePlataforma, ItadDeals itadDeals) {
-        this.idPlataforma = idPlataforma;
-        this.nomePlataforma = nomePlataforma;
+
+    public ItadPrice(Double preco, ItadDeals itadDeals) {
+        this.preco = preco;
         this.itadDeals = itadDeals;
     }
-
-    
 
 }

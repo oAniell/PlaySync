@@ -1,12 +1,15 @@
 package com.playsync.demo.config;
 
+import java.util.List;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.function.client.WebClient;
 
 @Configuration
 public class WebClientConfig {
-	/*
+
+    /*
 	 * *
 	 * https://store.steampowered.com/api/storesearch/?term=TERMO&l=portuguese&cc=BR
 	 * 
@@ -27,6 +30,8 @@ public class WebClientConfig {
 	public WebClient buscaPorTermoITADCliente(WebClient.Builder builder) {
 		return builder.baseUrl("https://api.isthereanydeal.com/games").build();
 	}
+
+
 	/*
 	 * Como funciona na prática
 	 * 1️ Você precisa do ID do jogo (não o nome)
@@ -63,4 +68,7 @@ public class WebClientConfig {
 	 * 
 	 * api key = baf038a8b8a8039c1e5f0def483913f055640f6e
 	 */
+
+
+	
 }
