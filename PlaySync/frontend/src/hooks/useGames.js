@@ -1,6 +1,9 @@
 import { useState, useCallback } from 'react';
 import { gameService } from '../services/api';
 
+// Cache de capsule por título — persiste enquanto o módulo estiver carregado (SPA)
+const capsuleCache = new Map();
+
 // URL fallback para imagens quebradas
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1612287230217-8c7684717995?w=400&h=300&fit=crop';
 
@@ -104,26 +107,33 @@ export const useGames = () => {
 
   // Busca Steam App ID pelo nome — retorna capsule URL + steamAppId + steamName
   const resolveSteamCapsule = async (game) => {
+    const cacheKey = normName(game.title);
+    if (capsuleCache.has(cacheKey)) return capsuleCache.get(cacheKey);
+
     try {
       const res = await gameService.searchGames(game.title);
       const items = res?.items ?? [];
-      const target = normName(game.title);
+      const target = cacheKey;
       const match =
         items.find(i => normName(i.name) === target) ||
         items.find(i => {
           const n = normName(i.name);
           return Math.abs(n.length - target.length) <= 4 && (n.startsWith(target) || target.startsWith(n));
         });
-      if (match?.id) {
-        return {
-          rawgId: game.rawgId,
-          capsule: `https://cdn.akamai.steamstatic.com/steam/apps/${match.id}/header.jpg`,
-          steamAppId: match.id,
-          steamName: match.name,
-        };
-      }
-    } catch { /* ignora falhas individuais */ }
-    return null;
+      const result = match?.id
+        ? {
+            rawgId: game.rawgId,
+            capsule: `https://cdn.akamai.steamstatic.com/steam/apps/${match.id}/header.jpg`,
+            steamAppId: match.id,
+            steamName: match.name,
+          }
+        : null;
+      capsuleCache.set(cacheKey, result);
+      return result;
+    } catch {
+      capsuleCache.set(cacheKey, null); // cacheia falha também, evita retry em loop
+      return null;
+    }
   };
 
   // Carrega featured + trending em uma única chamada — sem duplicatas garantidas pelo backend
