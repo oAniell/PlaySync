@@ -31,6 +31,9 @@ public class ItadApiPrecosService {
         // validarInformacao
     }
 
+    public void teste(){
+        
+    }
     private List<ItadMainClassDto> callApi(List<String> ids) {
         return this.priceClientItad.buscarPrecos(ids).block();
     }
