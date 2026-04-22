@@ -2,7 +2,6 @@ package com.playsync.demo.dtoresponse;
 
 import java.util.List;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import lombok.AllArgsConstructor;
@@ -14,10 +13,11 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@JsonIgnoreProperties(ignoreUnknown = true)
-public class ItadMainClassDto {
-    @JsonProperty("id")
+public class MergerSearchAndPriceResponse {
     private String idGame;
+    private String slug;
+    private String nomeJogo;
+    private String tipoDoItem;
+    private ItadAssetsLista itadAssetsLista;
     private List<ItadDealsDto> deals;
-
 }

@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.cglib.core.Local;
 import org.springframework.stereotype.Service;
 
 import com.playsync.demo.Entities.ItadDeals;
@@ -23,7 +22,6 @@ import com.playsync.demo.dtoresponse.ItadRegularDto;
 import com.playsync.demo.dtoresponse.ItadShopDto;
 import com.playsync.demo.repository.ItadMainClassRepository;
 
-import jakarta.persistence.OneToMany;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -32,14 +30,13 @@ public class ItadApiPrecosService {
 
     private final ItadMainClassRepository itadMainClassRepository;
     private final PriceClientItad priceClientItad;
-
     public List<ItadMainClassDto> principalMethod(List<String> ids) {
         List<ItadMainClass> itadMainClass = this.itadMainClassRepository.findByIds(ids);
 
         if (itadMainClass.isEmpty()) {
-            persistDataOfApiInDatabase(callApi(ids));
+            return persistDataOfApiInDatabase(callApi(ids));
         }
-        validDataInDatabase(itadMainClass, ids);
+        return validDataInDatabase(itadMainClass, ids);
 
     }
 
@@ -47,22 +44,22 @@ public class ItadApiPrecosService {
         return this.priceClientItad.buscarPrecos(ids).block();
     }
 
-    private void validDataInDatabase(List<ItadMainClass> listaEntidadeNoBanco, List<String> ids) {
+    private List<ItadMainClassDto> validDataInDatabase(List<ItadMainClass> listaEntidadeNoBanco, List<String> ids) {
         List<ItadMainClass> listaDeVencidos = new ArrayList<>();
         LocalDateTime dataLimite = LocalDateTime.now().minusSeconds(10);
-
         for (ItadMainClass itadMainClass : listaEntidadeNoBanco) {
             if (itadMainClass.getDataLastSearch().isBefore(dataLimite)) {
                 listaDeVencidos.add(itadMainClass);
             }
-
         }
-        if (!listaDeVencidos.isEmpty()) {
-
+        if (listaDeVencidos.isEmpty()) {
+            return montaDto(listaEntidadeNoBanco);
         }
+        return atualizaInformacaoVencida(listaDeVencidos, ids);
+
     }
 
-    private void persistDataOfApiInDatabase(List<ItadMainClassDto> itadMainClassDtos) {
+    private List<ItadMainClassDto> persistDataOfApiInDatabase(List<ItadMainClassDto> itadMainClassDtos) {
         List<ItadMainClass> itadMainClasses = new ArrayList<>();
         for (ItadMainClassDto itadMainClassDto : itadMainClassDtos) {
             ItadMainClass itadMainClass = new ItadMainClass(itadMainClassDto.getIdGame(), LocalDateTime.now());
@@ -82,9 +79,10 @@ public class ItadApiPrecosService {
             itadMainClasses.add(itadMainClass);
         }
         this.itadMainClassRepository.saveAll(itadMainClasses);
+        return montaDto(itadMainClasses);
     }
 
-    private void atualizaInformacaoVencida(List<ItadMainClass> listaDeVencidos,
+    private List<ItadMainClassDto> atualizaInformacaoVencida(List<ItadMainClass> listaDeVencidos,
             List<String> ids) {
         List<ItadMainClassDto> callApi = callApi(ids);
         Map<String, ItadMainClassDto> mapperEntity = new HashMap<>();
@@ -113,7 +111,7 @@ public class ItadApiPrecosService {
             }
         }
         this.itadMainClassRepository.saveAll(listaDeVencidos);
-
+        return montaDto(listaDeVencidos);
     }
 
     private void auxUpdateInformations(ItadDealsDto itadDealsDto, ItadDeals itadDeals) {
@@ -152,53 +150,86 @@ public class ItadApiPrecosService {
         }
     }
 
-    private ItadMainClassDto montaDto(List<ItadMainClass> entidades) {
+    private List<ItadMainClassDto> montaDto(List<ItadMainClass> entidades) {
         List<ItadMainClassDto> itadMainClassDtos = new ArrayList<>();
         for (ItadMainClass itadMainClass : entidades) {
             ItadMainClassDto itadMainClassDto = new ItadMainClassDto(itadMainClass.getIdGame(), null);
-            for (ItadDeals itadDeals : itadMainClass.getItad_deals()) {
-                ItadDealsDto itadDealsDto = new ItadDealsDto();
-
+            List<ItadDealsDto> itadDealsDtos = new ArrayList<>();
+            if (itadMainClass.getItad_deals() != null && !itadMainClass.getItad_deals().isEmpty()) {
+                for (ItadDeals itadDeals : itadMainClass.getItad_deals()) {
+                    ItadDealsDto itadDealsDto = new ItadDealsDto();
+                    auxMontaDto(itadDeals, itadDealsDto);
+                    itadDealsDtos.add(itadDealsDto);
+                }
             }
+            itadMainClassDto.setDeals(itadDealsDtos);
+            itadMainClassDtos.add(itadMainClassDto);
         }
+        return itadMainClassDtos;
     }
 
     private void auxMontaDto(ItadDeals itadDeals, ItadDealsDto itadDealsDto) {
         if (itadDeals != null) {
-            ItadShopDto itadShopDto = new ItadShopDto();
-            ItadPriceDto itadPriceDto = new ItadPriceDto();
-            ItadRegularDto itadRegularDto = new ItadRegularDto();
             if (itadDeals.getDesconto() != null) {
                 itadDealsDto.setCut(itadDeals.getDesconto());
             }
-            if (itadDeals.getShopId() != null) {
-                itadShopDto.setId(itadDeals.getShopId());
+            if (itadDeals.getShopId() != null || itadDeals.getShopName() != null) {
+                ItadShopDto shop = new ItadShopDto();
+                shop.setId(itadDeals.getShopId());
+                shop.setName(itadDeals.getShopName());
+                itadDealsDto.setShop(shop);
             }
-            if (itadDeals.getShopName() != null) {
-                itadShopDto.setName(itadDeals.getShopName());
-            }
+
             if (itadDeals.getPrice() != null) {
-                itadPriceDto.setAmount(itadDeals.getPrice());
+                ItadPriceDto price = new ItadPriceDto();
+                price.setAmount(itadDeals.getPrice());
+                itadDealsDto.setPrice(price);
             }
+
             if (itadDeals.getRegular() != null) {
-                itadRegularDto.setAmount(itadDeals.getRegular());
+                ItadRegularDto regular = new ItadRegularDto();
+                regular.setAmount(itadDeals.getRegular());
+                itadDealsDto.setRegular(regular);
             }
+
+            validaInformacaoDrmParaRetornoDto(itadDeals, itadDealsDto);
+            validaInformacaoPlataforms(itadDeals, itadDealsDto);
+
         }
     }
 
     private void validaInformacaoDrmParaRetornoDto(ItadDeals itadDeals, ItadDealsDto itadDealsDto) {
         if (itadDeals.getDrms() != null && !itadDeals.getDrms().isEmpty()) {
             List<DrmItadResponse> itadResponses = new ArrayList<>();
-            DrmItadResponse drmItadResponse = new DrmItadResponse(null, null);
             for (ItadDrm itadDrm : itadDeals.getDrms()) {
+                DrmItadResponse drmItadResponse = new DrmItadResponse(null, null);
                 if (itadDrm.getIdDrm() != null) {
-                    drmItadResponse.setId(itadDrm.getId());
+                    drmItadResponse.setId(itadDrm.getIdDrm());
                 }
                 if (itadDrm.getNome() != null) {
                     drmItadResponse.setName(itadDrm.getNome());
-                }   
-                
+                }
+                itadResponses.add(drmItadResponse);
+
             }
+            itadDealsDto.setDrm(itadResponses);
+        }
+    }
+
+    private void validaInformacaoPlataforms(ItadDeals itadDeals, ItadDealsDto itadDealsDto) {
+        if (itadDeals.getPlatforms() != null && !itadDeals.getPlatforms().isEmpty()) {
+            List<ItadPlataformsDto> itadPlataformsDto = new ArrayList<>();
+            for (ItadPlataforms itadPlataforms : itadDeals.getPlatforms()) {
+                ItadPlataformsDto itadPlataformsDtos = new ItadPlataformsDto();
+                if (itadPlataforms.getIdPlataforma() != null) {
+                    itadPlataformsDtos.setId(itadPlataforms.getIdPlataforma());
+                }
+                if (itadPlataforms.getNomePlataforma() != null) {
+                    itadPlataformsDtos.setName(itadPlataforms.getNomePlataforma());
+                }
+                itadPlataformsDto.add(itadPlataformsDtos);
+            }
+            itadDealsDto.setPlataformas(itadPlataformsDto);
         }
     }
 
