@@ -173,7 +173,7 @@ public class ApiSteam {
 			if (i.getPrecos().isEmpty()) {
 
 				itensDto.add(new ItensFiltradosPeloTermoDTO(i.getIdGame(), i.getNome(), new PrecoDeItensDTO(0.0, 0.0),
-						i.getImg(), i.getPossuiCompatibilidadeComControle().toString(), null));
+						i.getImg(), i.getPossuiCompatibilidadeComControle().toString(), null, null, null));
 
 			} else {
 
@@ -181,7 +181,7 @@ public class ApiSteam {
 				System.out.println("Item: " + i.getNome() + " - Preco Final: " + p.getPrecoFinal() + " - Preco Inicial: " + p.getPrecoInicial());
 				itensDto.add(new ItensFiltradosPeloTermoDTO(i.getIdGame(), i.getNome(),
 						new PrecoDeItensDTO(p.getPrecoInicial(), p.getPrecoFinal()), i.getImg(),
-						i.getPossuiCompatibilidadeComControle().toString(), null));
+						i.getPossuiCompatibilidadeComControle().toString(), null, null, null));
 			}
 		}
 		BuscaPorTermoDTO result = new BuscaPorTermoDTO(itensDto.size(), itensDto);

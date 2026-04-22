@@ -56,6 +56,9 @@ public class RawgGame {
 	@JsonProperty("short_screenshots")
 	private List<RawgScreenshot> shortScreenshots;
 
+	@JsonProperty("stores")
+	private List<RawgStore> stores;
+
 	// Campos calculados/adaptados
 	private String description;
 	private String descriptionRaw;

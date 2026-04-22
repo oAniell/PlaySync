@@ -1,5 +1,7 @@
 package com.playsync.demo.dtoresponse;
 
+import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -26,4 +28,10 @@ public class ItensFiltradosPeloTermoDTO {
 	
 	// Dados adicionais da RAWG API
 	private RawgGameDetailDTO rawgDetails;
+
+	// Screenshots do jogo (URLs das imagens)
+	private List<String> screenshots;
+
+	// Capsule da Steam com logo do jogo (ex: header.jpg) — para cards de trending
+	private String steamCapsuleUrl;
 }

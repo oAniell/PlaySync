@@ -1,6 +1,9 @@
 import { useState, useCallback } from 'react';
 import { gameService } from '../services/api';
 
+// Cache de capsule por título — persiste enquanto o módulo estiver carregado (SPA)
+const capsuleCache = new Map();
+
 // URL fallback para imagens quebradas
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1612287230217-8c7684717995?w=400&h=300&fit=crop';
 
@@ -77,80 +80,96 @@ export const useGames = () => {
     }
   }, []);
 
-  // Carregar jogos em destaque (da RAWG API)
-  const loadFeatured = useCallback(async () => {
-    setIsLoading(true);
-    
-    try {
-      // Chama a API RAWG para buscar jogo em destaque
-      const data = await gameService.getFeaturedGame();
-      console.log('RAWG Featured response:', JSON.stringify(data, null, 2));
-      
-      // Adapta os dados para o formato esperado pelo frontend
-      if (data) {
-        const imgUrl = data.img || data.tiny_image || data.background_image || '';
-        console.log('Featured Image URL:', imgUrl);
-        const normalizedUrl = normalizeImageUrl(imgUrl);
-        console.log('Featured Normalized URL:', normalizedUrl);
-        
-        const adaptedFeatured = {
-          id: data.idGame || data.id || 0,
-          title: data.name || 'Sem título',
-          coverImageUrl: normalizedUrl,
-          backgroundImageUrl: normalizedUrl,
-          genres: data.nomeGeneros || data.genres || '',
-          rating: data.avaliacao || data.rating || 0,
-          platforms: data.nomePlataformas || data.platforms || '',
-          // Adicionar ofertas vazias para evitar erros
-          offers: [],
-        };
-        console.log('Adapted Featured:', adaptedFeatured);
-        setFeatured(adaptedFeatured);
-      }
-    } catch (err) {
-      console.error('Erro ao carregar jogo em destaque:', err);
-      setError(err.message);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const adaptGame = (data) => {
+    const imgUrl = data.img || data.tiny_image || data.background_image || '';
+    const backgroundUrl = normalizeImageUrl(imgUrl);
+    const capsuleUrl = data.steamCapsuleUrl || null;
+    const rawgId = data.idGame || data.id || 0;
+    return {
+      id: rawgId,
+      rawgId,
+      title: data.name || 'Sem título',
+      // coverImageUrl: capsule com logo (cards de trending) — fallback para wide art
+      coverImageUrl: capsuleUrl || backgroundUrl,
+      // backgroundImageUrl: wide art sem logo (destaque principal hero)
+      backgroundImageUrl: backgroundUrl,
+      tinyImageUrl: backgroundUrl,
+      genres: data.rawgDetails?.nomeGeneros || data.nomeGeneros || data.genres || '',
+      rating: data.rawgDetails?.avaliacao || data.avaliacao || data.rating || 0,
+      platforms: data.rawgDetails?.nomePlataformas || data.nomePlataformas || data.platforms || '',
+      offers: [],
+      screenshots: data.screenshots || [],
+    };
+  };
 
-  // Carregar jogos em tendência (da RAWG API)
-  const loadTrending = useCallback(async () => {
-    setIsLoading(true);
-    
+  // Normaliza nome: lowercase, sem pontuação
+  const normName = (s) => (s || '').toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
+
+  // Busca Steam App ID pelo nome — retorna capsule URL + steamAppId + steamName
+  const resolveSteamCapsule = async (game) => {
+    const cacheKey = normName(game.title);
+    if (capsuleCache.has(cacheKey)) return capsuleCache.get(cacheKey);
+
     try {
-      // Chama a API RAWG para buscar jogos em tendência
-      const data = await gameService.getTrendingGames(10);
-      console.log('RAWG Trending response:', JSON.stringify(data, null, 2));
-      
-      // Adapta os dados para o formato esperado pelo frontend
-      if (data && Array.isArray(data)) {
-        const adaptedTrending = data.map(game => {
-          // Debug cada campo
-          console.log('Game from RAWG:', JSON.stringify(game));
-          const imgUrl = game.img || game.tiny_image || game.background_image || '';
-          console.log('Image URL to normalize:', imgUrl);
-          const normalizedUrl = normalizeImageUrl(imgUrl);
-          console.log('Normalized URL:', normalizedUrl);
-          
-          return {
-            id: game.idGame || game.id || 0,
-            title: game.name || 'Sem título',
-            coverImageUrl: normalizedUrl,
-            backgroundImageUrl: normalizedUrl,
-            genres: game.nomeGeneros || game.genres || '',
-            rating: game.avaliacao || game.rating || 0,
-            platforms: game.nomePlataformas || game.platforms || '',
-            // Adicionar ofertas vazias para evitar erros
-            offers: [],
-          };
+      const res = await gameService.searchGames(game.title);
+      const items = res?.items ?? [];
+      const target = cacheKey;
+      const match =
+        items.find(i => normName(i.name) === target) ||
+        items.find(i => {
+          const n = normName(i.name);
+          return Math.abs(n.length - target.length) <= 4 && (n.startsWith(target) || target.startsWith(n));
         });
-        console.log('Adapted trending:', adaptedTrending);
-        setTrending(adaptedTrending);
-      }
+      const result = match?.id
+        ? {
+            rawgId: game.rawgId,
+            capsule: `https://cdn.akamai.steamstatic.com/steam/apps/${match.id}/header.jpg`,
+            steamAppId: match.id,
+            steamName: match.name,
+          }
+        : null;
+      capsuleCache.set(cacheKey, result);
+      return result;
+    } catch {
+      capsuleCache.set(cacheKey, null); // cacheia falha também, evita retry em loop
+      return null;
+    }
+  };
+
+  // Carrega featured + trending em uma única chamada — sem duplicatas garantidas pelo backend
+  const loadHomeData = useCallback(async () => {
+    setIsLoading(true);
+
+    try {
+      const data = await gameService.getHomeData(10);
+
+      const featuredGame = data?.featured ? adaptGame(data.featured) : null;
+      const trendingGames = data?.trending?.map(adaptGame) ?? [];
+
+      if (featuredGame) setFeatured(featuredGame);
+      if (trendingGames.length) setTrending(trendingGames);
+
+      // Enriquece trending + featured com Steam capsule em background (sem bloquear o render)
+      const toEnrich = [...trendingGames, ...(featuredGame ? [featuredGame] : [])].filter(g => g.rawgId);
+      if (toEnrich.length === 0) return;
+
+      Promise.allSettled(toEnrich.map(resolveSteamCapsule)).then(results => {
+        const capsuleMap = {};
+        results.forEach(r => {
+          if (r.status === 'fulfilled' && r.value) capsuleMap[r.value.rawgId] = r.value;
+        });
+        if (Object.keys(capsuleMap).length === 0) return;
+
+        const applyEnrich = (g) => {
+          const e = capsuleMap[g.rawgId];
+          if (!e) return g;
+          return { ...g, coverImageUrl: e.capsule, steamAppId: e.steamAppId, steamName: e.steamName };
+        };
+        setTrending(prev => prev.map(applyEnrich));
+        setFeatured(prev => prev ? applyEnrich(prev) : prev);
+      });
     } catch (err) {
-      console.error('Erro ao carregar jogos em tendência:', err);
+      console.error('Erro ao carregar dados da home:', err);
       setError(err.message);
     } finally {
       setIsLoading(false);
@@ -188,8 +207,7 @@ export const useGames = () => {
     isLoading,
     error,
     search,
-    loadFeatured,
-    loadTrending,
+    loadHomeData,
     selectGame,
     clearSelection,
     clearSearch,

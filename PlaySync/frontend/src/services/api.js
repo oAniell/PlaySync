@@ -1,6 +1,6 @@
 // Configuração das URLs da API
 // Backend Steam: POST /api-playsync/search?termo=xxx
-// Backend RAWG: GET /api-playsync/featured, GET /api-playsync/trending
+// Backend RAWG: GET /api-playsync/home (featured + trending sem duplicatas)
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
@@ -8,15 +8,21 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 export const API_ENDPOINTS = {
   // Buscar jogos por termo (endpoint do backend Steam)
   SEARCH_GAMES: (term) => `${API_BASE_URL}/api-playsync/search?termo=${encodeURIComponent(term)}`,
-  
-  // Buscar jogo em destaque (endpoint do backend RAWG)
-  FEATURED_GAME: `${API_BASE_URL}/api-playsync/featured`,
-  
-  // Buscar jogos em tendência (endpoint do backend RAWG)
-  TRENDING_GAMES: (limit = 10) => `${API_BASE_URL}/api-playsync/trending?limit=${limit}`,
+
+  // Buscar featured + trending coordenados (sem duplicatas)
+  HOME_DATA: (trendingLimit = 10) => `${API_BASE_URL}/api-playsync/home?trendingLimit=${trendingLimit}`,
   
   // Obter detalhes de um jogo específico
   GAME_DETAILS: (gameId) => `${API_BASE_URL}/api/games/${gameId}`,
+
+  // Buscar screenshots em alta resolução pelo ID RAWG (1280x720 a 1920x1080)
+  GAME_SCREENSHOTS: (rawgId) => `${API_BASE_URL}/api-playsync/games/${rawgId}/screenshots`,
+
+  // Enriquecer jogo pelo nome: rawgId + backgroundImage + screenshots
+  GAME_ENRICH: (name) => `${API_BASE_URL}/api-playsync/games/enrich?name=${encodeURIComponent(name)}`,
+
+  // Screenshots 1920x1080 pelo Steam App ID — sem ambiguidade de nome
+  STEAM_SCREENSHOTS: (appId) => `${API_BASE_URL}/api-playsync/steam/${appId}/screenshots`,
   
   // Obter jogos em destaque
   FEATURED_GAMES: `${API_BASE_URL}/api/games/featured`,
@@ -53,7 +59,6 @@ const fetchAPI = async (url, options = {}) => {
     
     return await response.json();
   } catch (error) {
-    console.error('API Error:', error);
     throw error;
   }
 };
@@ -65,14 +70,9 @@ export const gameService = {
     return fetchAPI(API_ENDPOINTS.SEARCH_GAMES(term), { method: 'POST' });
   },
 
-  // Buscar jogo em destaque
-  getFeaturedGame: async () => {
-    return fetchAPI(API_ENDPOINTS.FEATURED_GAME);
-  },
-
-  // Buscar jogos em tendência
-  getTrendingGames: async (limit = 10) => {
-    return fetchAPI(API_ENDPOINTS.TRENDING_GAMES(limit));
+  // Buscar featured + trending coordenados (sem duplicatas)
+  getHomeData: async (trendingLimit = 10) => {
+    return fetchAPI(API_ENDPOINTS.HOME_DATA(trendingLimit));
   },
 
   // Obter detalhes de um jogo
@@ -88,6 +88,21 @@ export const gameService = {
   // Obter lista de lojas
   getStores: async () => {
     return fetchAPI(API_ENDPOINTS.STORES);
+  },
+
+  // Buscar screenshots em alta resolução pelo ID RAWG
+  getGameScreenshots: async (rawgId) => {
+    return fetchAPI(API_ENDPOINTS.GAME_SCREENSHOTS(rawgId));
+  },
+
+  // Enriquecer jogo da busca Steam com dados RAWG (rawgId + imagem HD + screenshots)
+  enrichGame: async (name) => {
+    return fetchAPI(API_ENDPOINTS.GAME_ENRICH(name));
+  },
+
+  // Screenshots 1920x1080 pelo Steam App ID
+  getSteamScreenshots: async (appId) => {
+    return fetchAPI(API_ENDPOINTS.STEAM_SCREENSHOTS(appId));
   },
 };
 
