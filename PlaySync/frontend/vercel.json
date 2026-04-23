@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/api-playsync/:path*", "destination": "http://localhost:8080/api-playsync/:path*" },
+    { "source": "/(.*)", "destination": "/" }
+  ]
+}

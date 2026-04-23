@@ -22,9 +22,9 @@ export const STORE_IDS = {
 
 // Cores do tema
 export const THEME_COLORS = {
-  primary: '#8b5cf6', // purple-500
-  primaryHover: '#7c3aed', // purple-600
-  secondary: '#6366f1', // indigo-500
+  primary: '#3b82f6', // blue-500
+  primaryHover: '#2563eb', // blue-600
+  secondary: '#06b6d4', // cyan-500
   success: '#10b981', // emerald-400
   danger: '#ef4444', // red-500
   warning: '#f59e0b', // amber-500

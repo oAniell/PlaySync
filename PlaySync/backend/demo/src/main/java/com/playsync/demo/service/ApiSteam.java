@@ -2,7 +2,6 @@ package com.playsync.demo.service;
 
 import java.time.LocalDateTime;
 
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -42,10 +41,12 @@ public class ApiSteam {
 		List<ItensFiltradosPeloTermoDTO> itensVindoDaApi = new ArrayList<>();
 
 		System.out.println("Validacao: " + validacao(itensNoBanco));
-		if (itensNoBanco.isEmpty()) {
-			System.out.println("Banco vazio, chamando API externa...");
+
+		if (itensNoBanco == null || itensNoBanco.isEmpty()) {
+			System.out.println("Banco vazio - chamando API externa para termo: " + termo);
 			return metodoChamaApiEPersiste(termo);
 		}
+		
 		if (validacao(itensNoBanco)) {
 			return atualiza(itensNoBanco, termo);
 		}
@@ -106,7 +107,7 @@ public class ApiSteam {
 	}
 
 	private Boolean validacao(List<ItensBuscadorPeloTermo> lista) {
-		LocalDateTime dataLimite = LocalDateTime.now().minusSeconds(10);
+		LocalDateTime dataLimite = LocalDateTime.now().minusHours(6);
 		for (ItensBuscadorPeloTermo i : lista) {
 			if (i.getDataPesquisaUsuario().isBefore(dataLimite)) {
 				return true;
@@ -116,7 +117,7 @@ public class ApiSteam {
 	}
 
 	private BuscaPorTermoDTO atualiza(List<ItensBuscadorPeloTermo> lista, String termo) {
-		LocalDateTime dataLimite = LocalDateTime.now().minusSeconds(10);
+		LocalDateTime dataLimite = LocalDateTime.now().minusHours(6);
 		BuscaPorTermoDTO respostaApi = webConfig.buscarPorTermo(termo).block();
 		List<ItensBuscadorPeloTermo> listaDeItensVencidos = new ArrayList<>();
 
@@ -172,7 +173,7 @@ public class ApiSteam {
 			if (i.getPrecos().isEmpty()) {
 
 				itensDto.add(new ItensFiltradosPeloTermoDTO(i.getIdGame(), i.getNome(), new PrecoDeItensDTO(0.0, 0.0),
-						i.getImg(), i.getPossuiCompatibilidadeComControle().toString()));
+						i.getImg(), i.getPossuiCompatibilidadeComControle().toString(), null, null, null));
 
 			} else {
 
@@ -181,7 +182,7 @@ public class ApiSteam {
 						+ " - Preco Inicial: " + p.getPrecoInicial());
 				itensDto.add(new ItensFiltradosPeloTermoDTO(i.getIdGame(), i.getNome(),
 						new PrecoDeItensDTO(p.getPrecoInicial(), p.getPrecoFinal()), i.getImg(),
-						i.getPossuiCompatibilidadeComControle().toString()));
+						i.getPossuiCompatibilidadeComControle().toString(), null, null, null));
 			}
 		}
 		BuscaPorTermoDTO result = new BuscaPorTermoDTO(itensDto.size(), itensDto);
