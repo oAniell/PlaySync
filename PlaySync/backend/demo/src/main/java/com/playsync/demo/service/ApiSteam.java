@@ -39,7 +39,7 @@ public class ApiSteam {
 		List<ItensBuscadorPeloTermo> itensNoBanco = this.itensRepository.findByName(termo);
 		System.out.println("Itens no banco: " + itensNoBanco);
 		List<ItensFiltradosPeloTermoDTO> itensVindoDaApi = new ArrayList<>();
-		
+
 		System.out.println("Validacao: " + validacao(itensNoBanco));
 
 		if (itensNoBanco == null || itensNoBanco.isEmpty()) {
@@ -61,12 +61,12 @@ public class ApiSteam {
 		if (buscaDto == null) {
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Nao encontrado nenhuma informacao");
 		}
-		
+
 		// Verifica se a lista de itens está vazia
 		if (buscaDto.getItens() == null || buscaDto.getItens().isEmpty()) {
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Conteudo nao encontrado");
 		}
-		
+
 		System.out.println("Resposta da API: " + buscaDto);
 
 		List<ItensBuscadorPeloTermo> listaDeItens = new ArrayList<>();
@@ -178,7 +178,8 @@ public class ApiSteam {
 			} else {
 
 				PrecosJogos p = i.getPrecos().get(0);
-				System.out.println("Item: " + i.getNome() + " - Preco Final: " + p.getPrecoFinal() + " - Preco Inicial: " + p.getPrecoInicial());
+				System.out.println("Item: " + i.getNome() + " - Preco Final: " + p.getPrecoFinal()
+						+ " - Preco Inicial: " + p.getPrecoInicial());
 				itensDto.add(new ItensFiltradosPeloTermoDTO(i.getIdGame(), i.getNome(),
 						new PrecoDeItensDTO(p.getPrecoInicial(), p.getPrecoFinal()), i.getImg(),
 						i.getPossuiCompatibilidadeComControle().toString(), null, null, null));
