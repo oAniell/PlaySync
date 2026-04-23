@@ -1,16 +1,17 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams, useLocation } from 'react-router-dom';
 import GameDetail from '../components/Game/GameDetail';
 import SearchBar from '../components/Search/SearchBar';
 
 function GamePage({ selectedGame, isLoading, onLoadGame }) {
   const navigate = useNavigate();
   const { id } = useParams();
+  const location = useLocation();
   const [, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    if (id) onLoadGame(id);
+    if (id && !location.state?.fromClick) onLoadGame(id);
   }, [id]);
 
   const handleSearch = (e) => {

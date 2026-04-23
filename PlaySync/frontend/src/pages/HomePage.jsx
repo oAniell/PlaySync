@@ -16,7 +16,7 @@ function HomePage({ featured, trending, isLoading, onGameClick }) {
 
   const handleGameClick = (game) => {
     onGameClick(game);
-    navigate(`/game/${game.id}`);
+    navigate(`/game/${game.id}`, { state: { fromClick: true } });
   };
 
   return (

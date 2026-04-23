@@ -99,6 +99,18 @@ function ScreenshotsGallery({ screenshots }) {
 
 /* ── Main component ──────────────────────────────────────── */
 function GameDetail({ game, onBack }) {
+  const [showFallback, setShowFallback] = useState(false);
+
+  useEffect(() => {
+    if (game.screenshots?.length > 0) {
+      setShowFallback(false);
+      return;
+    }
+    setShowFallback(false);
+    const id = setTimeout(() => setShowFallback(true), 2000);
+    return () => clearTimeout(id);
+  }, [game.id, game.screenshots?.length]);
+
   const genres =
     typeof game.genres === 'string'
       ? game.genres.split(',').map((g) => g.trim()).filter(Boolean).slice(0, 5)
@@ -106,12 +118,10 @@ function GameDetail({ game, onBack }) {
       ? game.genres.slice(0, 5)
       : [];
 
-  // Usa coverImageUrl como placeholder imediato (já em cache no browser)
-  // enquanto os screenshots reais carregam em background
   const screenshots =
     game.screenshots?.length > 0
       ? game.screenshots
-      : game.coverImageUrl
+      : showFallback && game.coverImageUrl
       ? [game.coverImageUrl]
       : [];
 

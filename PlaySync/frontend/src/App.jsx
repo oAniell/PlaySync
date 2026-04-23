@@ -101,7 +101,7 @@ function App() {
     const base = enrichWithMockData(enrichedGame);
     setSelectedGame({
       ...base,
-      screenshots: base.screenshots?.length > 0 ? base.screenshots : [],
+      screenshots: [],
       screenshotsLoading: willFetchScreenshots,
     });
 
@@ -120,18 +120,21 @@ function App() {
 
   const handleLoadGame = async (id) => {
     setSelectedGame(null);
-    const numericId = Number(id);
     const fromTrending = trending.find(g => String(g.id) === String(id));
-    if (fromTrending) {
-      await handleGameClick(fromTrending);
+    const fromFeatured = featured && String(featured.id) === String(id) ? featured : null;
+    const cached = fromTrending || fromFeatured;
+    if (cached) {
+      await handleGameClick(cached);
       return;
     }
-    if (!isNaN(numericId)) {
+    // fallback para acesso direto pela URL com Steam App ID
+    const numericId = Number(id);
+    if (!isNaN(numericId) && numericId > 10000) {
       try {
         const results = await gameService.searchGames(String(id));
         if (results?.items?.length > 0) {
           const adapted = adaptSteamData({ items: results.items });
-          const match = adapted.find(g => String(g.id) === String(id)) || adapted[0];
+          const match = adapted.find(g => String(g.id) === String(id));
           if (match) {
             await handleGameClick(match);
             return;

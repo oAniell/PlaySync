@@ -67,8 +67,11 @@ public class RawgService {
 	 * Garante que o jogo em destaque não aparece na lista de trending.
 	 */
 	public Mono<HomeResponseDTO> getHomeData(int trendingLimit) {
-		return getFeaturedGame().flatMap(featured ->
+		return getFeaturedGame()
+			.defaultIfEmpty(new ItensFiltradosPeloTermoDTO())
+			.flatMap(featured ->
 			rawgClient.getTrendingGames(trendingLimit + 1)
+				.defaultIfEmpty(new RawgGameResponse())
 				.map(response -> {
 					List<ItensFiltradosPeloTermoDTO> trending;
 					if (response.getResults() == null || response.getResults().isEmpty()) {
@@ -76,11 +79,11 @@ public class RawgService {
 					} else {
 						trending = response.getResults().stream()
 								.map(this::mapToDto)
-								.filter(g -> featured == null || !g.getName().equalsIgnoreCase(featured.getName()))
+								.filter(g -> featured.getName() == null || !g.getName().equalsIgnoreCase(featured.getName()))
 								.limit(trendingLimit)
 								.collect(Collectors.toList());
 					}
-					return new HomeResponseDTO(featured, trending);
+					return new HomeResponseDTO(featured.getName() != null ? featured : null, trending);
 				})
 		);
 	}
