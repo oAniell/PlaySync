@@ -4,7 +4,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import com.playsync.demo.client.RawgClient;
@@ -15,7 +14,6 @@ import com.playsync.demo.dtoresponse.RawgGameDetailDTO;
 import com.playsync.demo.dtoresponse.RawgGameEnrichDTO;
 import com.playsync.demo.dtoresponse.RawgGameResponse;
 import com.playsync.demo.dtoresponse.RawgScreenshot;
-import com.playsync.demo.repository.ItensBuscadosPeloTermoRepository;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -25,7 +23,7 @@ import reactor.core.publisher.Mono;
 public class RawgService {
 
 	private final RawgClient rawgClient;
-	private final ItensBuscadosPeloTermoRepository itensRepository;
+	private final DynamoDbCacheService cacheService;
 
 	/**
 	 * Busca o jogo em destaque baseado na atividade do site (último 30 dias).
@@ -34,8 +32,7 @@ public class RawgService {
 	 */
 	public Mono<ItensFiltradosPeloTermoDTO> getFeaturedGame() {
 		LocalDateTime trintaDiasAtras = LocalDateTime.now().minusDays(30);
-		List<String> maisSearchados = itensRepository.findMostSearchedGameNames(
-				trintaDiasAtras, PageRequest.of(0, 1));
+		List<String> maisSearchados = cacheService.findMostSearchedGameNames(trintaDiasAtras, 1);
 
 		if (!maisSearchados.isEmpty()) {
 			return rawgClient.searchGameByName(maisSearchados.get(0))
@@ -52,13 +49,13 @@ public class RawgService {
 
 	private Mono<ItensFiltradosPeloTermoDTO> getFeaturedFallback() {
 		return rawgClient.getTrendingGames(2)
-				.map(response -> {
+				.flatMap(response -> {
 					if (response.getResults() == null || response.getResults().isEmpty()) {
-						return null;
+						return Mono.empty();
 					}
 					// índice 0 será o primeiro da lista de trending abaixo — usa o índice 1 para não repetir
 					int idx = response.getResults().size() > 1 ? 1 : 0;
-					return mapToDto(response.getResults().get(idx));
+					return Mono.just(mapToDto(response.getResults().get(idx)));
 				});
 	}
 
