@@ -155,12 +155,10 @@ describe('Roteamento — App', () => {
     expect(content).toContain('historyApiFallback');
   });
 
-  it('vercel.json contém rewrite /(.*) → / (req 7.2)', () => {
-    const vercelPath = path.resolve(process.cwd(), 'vercel.json');
-    const content = fs.readFileSync(vercelPath, 'utf-8');
-    const json = JSON.parse(content);
-    const hasSpaRewrite = json.rewrites?.some(r => r.source === '/(.*)' && r.destination === '/');
-    expect(hasSpaRewrite).toBe(true);
+  it('nginx.conf contém try_files para SPA fallback (req 7.2)', () => {
+    const nginxPath = path.resolve(process.cwd(), 'nginx.conf');
+    const content = fs.readFileSync(nginxPath, 'utf-8');
+    expect(content).toContain('try_files $uri $uri/ /index.html');
   });
 
   it('busca com erro mantém URL em /search e exibe mensagem (req 3.6)', () => {
