@@ -109,7 +109,7 @@ public class ApiSteam {
 	private Boolean validacao(List<ItensBuscadorPeloTermo> lista) {
 		LocalDateTime dataLimite = LocalDateTime.now().minusHours(6);
 		for (ItensBuscadorPeloTermo i : lista) {
-			if (i.getDataPesquisaUsuario().isBefore(dataLimite)) {
+			if (i.getDataPesquisaUsuario() != null && i.getDataPesquisaUsuario().isBefore(dataLimite)) {
 				return true;
 			}
 		}
@@ -120,6 +120,10 @@ public class ApiSteam {
 		LocalDateTime dataLimite = LocalDateTime.now().minusHours(6);
 		BuscaPorTermoDTO respostaApi = webConfig.buscarPorTermo(termo).block();
 		List<ItensBuscadorPeloTermo> listaDeItensVencidos = new ArrayList<>();
+
+		if (respostaApi == null || respostaApi.getItens() == null || respostaApi.getItens().isEmpty()) {
+			return formataEmDto(lista);
+		}
 
 		for (ItensBuscadorPeloTermo i : lista) {
 			if (i.getDataPesquisaUsuario().isBefore(dataLimite)) {

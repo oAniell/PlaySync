@@ -42,7 +42,8 @@ public class ItadApiPrecosService {
     }
 
     public List<ItadMainClassDto> callApi(List<String> ids) {
-        return this.priceClientItad.buscarPrecos(ids).block();
+        List<ItadMainClassDto> result = this.priceClientItad.buscarPrecos(ids).block();
+        return result != null ? result : new ArrayList<>();
     }
 
     private List<ItadMainClassDto> validDataInDatabase(List<ItadMainClass> listaEntidadeNoBanco, List<String> ids) {
