@@ -1,5 +1,8 @@
 package com.playsync.demo;
 
+import java.lang.reflect.Field;
+
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.playsync.demo.config.DynamoDbConfig;
@@ -14,9 +17,21 @@ class DynamoDbConfigTest {
 
     private final DynamoDbConfig config = new DynamoDbConfig();
 
+    @BeforeEach
+    void setup() throws Exception {
+        setField("accessKeyId", "dummyKey");
+        setField("secretKey", "dummySecret");
+        setField("region", "sa-east-1");
+    }
+
+    private void setField(String name, String value) throws Exception {
+        Field f = DynamoDbConfig.class.getDeclaredField(name);
+        f.setAccessible(true);
+        f.set(config, value);
+    }
+
     @Test
     void dynamoDbClientReturnsNonNull() {
-        // Verifica que o bean é criado sem exceção (região SA_EAST_1)
         DynamoDbClient client = config.dynamoDbClient();
         assertThat(client).isNotNull();
         client.close();
