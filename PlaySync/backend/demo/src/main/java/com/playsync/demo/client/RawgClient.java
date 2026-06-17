@@ -13,6 +13,10 @@ import org.springframework.web.reactive.function.client.WebClient;
 import com.playsync.demo.dtoresponse.RawgGameResponse;
 import com.playsync.demo.dtoresponse.RawgScreenshotListResponse;
 
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
+import jakarta.annotation.PostConstruct;
 import reactor.core.publisher.Mono;
 
 @Service
@@ -22,10 +26,23 @@ public class RawgClient {
 
 	private final WebClient rawgWebClient;
 	private final String apiKey;
+	private final MeterRegistry meterRegistry;
 
-	public RawgClient(@Qualifier("rawgCliente") WebClient rawgCliente, @Value("${rawg.api.key}") String apiKey) {
+	private Counter rawgSearchCounter;
+
+	public RawgClient(@Qualifier("rawgCliente") WebClient rawgCliente,
+			@Value("${rawg.api.key}") String apiKey,
+			MeterRegistry meterRegistry) {
 		this.rawgWebClient = rawgCliente;
 		this.apiKey = apiKey;
+		this.meterRegistry = meterRegistry;
+	}
+
+	@PostConstruct
+	private void initMetrics() {
+		rawgSearchCounter = Counter.builder("playsync.rawg.searches.total")
+				.description("Total de buscas de jogos realizadas na RAWG API")
+				.register(meterRegistry);
 	}
 
 	private <T> Mono<T> handleErrors(Mono<T> mono) {
@@ -51,13 +68,14 @@ public class RawgClient {
 	}
 
 	/**
-	 * Busca jogos em tendência (mais jogados nos últimos 12 meses)
-	 * Endpoint: https://api.rawg.io/api/games?key=API_KEY&dates={12_meses_atras},{hoje}&ordering=-added
+	 * Busca jogos em tendência (mais jogados nos últimos 6 meses)
+	 * Endpoint: https://api.rawg.io/api/games?key=API_KEY&dates={6_meses_atras},{hoje}&ordering=-added
 	 */
 	public Mono<RawgGameResponse> getTrendingGames(int pageSize) {
 		String hoje = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE);
 		String seisMesesAtras = LocalDate.now().minusMonths(6).format(DateTimeFormatter.ISO_LOCAL_DATE);
 		String dateRange = seisMesesAtras + "," + hoje;
+		Timer.Sample sample = Timer.start(meterRegistry);
 
 		return handleErrors(this.rawgWebClient.get()
 				.uri(uri -> uri.path("/games")
@@ -67,7 +85,9 @@ public class RawgClient {
 						.queryParam("page_size", pageSize)
 						.build())
 				.retrieve()
-				.bodyToMono(RawgGameResponse.class));
+				.bodyToMono(RawgGameResponse.class))
+				.doOnTerminate(() -> sample.stop(
+						meterRegistry.timer("playsync.rawg.api.duration", "operation", "trending")));
 	}
 
 	/**
@@ -75,6 +95,9 @@ public class RawgClient {
 	 * Endpoint: https://api.rawg.io/api/games?key=API_KEY&search={name}&page_size=1&exact=true
 	 */
 	public Mono<RawgGameResponse> searchGameByName(String name) {
+		rawgSearchCounter.increment();
+		Timer.Sample sample = Timer.start(meterRegistry);
+
 		return handleErrors(this.rawgWebClient.get()
 				.uri(uri -> uri.path("/games")
 						.queryParam("key", apiKey)
@@ -83,10 +106,15 @@ public class RawgClient {
 						.queryParam("search_exact", true)
 						.build())
 				.retrieve()
-				.bodyToMono(RawgGameResponse.class));
+				.bodyToMono(RawgGameResponse.class))
+				.doOnTerminate(() -> sample.stop(
+						meterRegistry.timer("playsync.rawg.api.duration", "operation", "search_by_name")));
 	}
 
 	public Mono<RawgGameResponse> searchGameCandidates(String name) {
+		rawgSearchCounter.increment();
+		Timer.Sample sample = Timer.start(meterRegistry);
+
 		return handleErrors(this.rawgWebClient.get()
 				.uri(uri -> uri.path("/games")
 						.queryParam("key", apiKey)
@@ -95,7 +123,9 @@ public class RawgClient {
 						.queryParam("stores", 1)
 						.build())
 				.retrieve()
-				.bodyToMono(RawgGameResponse.class));
+				.bodyToMono(RawgGameResponse.class))
+				.doOnTerminate(() -> sample.stop(
+						meterRegistry.timer("playsync.rawg.api.duration", "operation", "search_candidates")));
 	}
 
 	public Mono<Object> getGameDetails(Long gameId) {
@@ -108,11 +138,15 @@ public class RawgClient {
 	}
 
 	public Mono<RawgScreenshotListResponse> getGameScreenshots(Long gameId) {
+		Timer.Sample sample = Timer.start(meterRegistry);
+
 		return handleErrors(this.rawgWebClient.get()
 				.uri(uri -> uri.path("/games/{id}/screenshots")
 						.queryParam("key", apiKey)
 						.build(gameId))
 				.retrieve()
-				.bodyToMono(RawgScreenshotListResponse.class));
+				.bodyToMono(RawgScreenshotListResponse.class))
+				.doOnTerminate(() -> sample.stop(
+						meterRegistry.timer("playsync.rawg.api.duration", "operation", "screenshots")));
 	}
 }

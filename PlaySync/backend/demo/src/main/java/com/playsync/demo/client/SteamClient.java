@@ -10,15 +10,34 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.playsync.demo.dtoresponse.BuscaPorTermoDTO;
 
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
+import jakarta.annotation.PostConstruct;
 import reactor.core.publisher.Mono;
 
 @Service
 public class SteamClient {
 
 	private final WebClient webClient;
+	private final MeterRegistry meterRegistry;
 
-	public SteamClient(WebClient webClient) {
+	private Counter steamSearchCounter;
+	private Timer steamApiTimer;
+
+	public SteamClient(WebClient webClient, MeterRegistry meterRegistry) {
 		this.webClient = webClient;
+		this.meterRegistry = meterRegistry;
+	}
+
+	@PostConstruct
+	private void initMetrics() {
+		steamSearchCounter = Counter.builder("playsync.steam.searches.total")
+				.description("Total de chamadas realizadas à Steam Store API")
+				.register(meterRegistry);
+		steamApiTimer = Timer.builder("playsync.steam.api.duration")
+				.description("Duração das chamadas à Steam Store API")
+				.register(meterRegistry);
 	}
 
 	/*
@@ -26,26 +45,28 @@ public class SteamClient {
 	 */
 
 	public Mono<BuscaPorTermoDTO> buscarPorTermo(String termo) {
-	    return this.webClient.get()
-	        .uri(uri -> uri.path("/storesearch/")
-	                       .queryParam("term", termo)
-	                       .queryParam("l", "portuguese")
-	                       .queryParam("cc", "BR")
-	                       .build())
-	        .retrieve()
-	        .bodyToMono(String.class) // pega primeiro como String
-	        .map(json -> {
-	            try {
-	                // Log da resposta JSON da Steam para debug
-	                System.out.println("=== RESPOSTA BRUTA DA STEAM API ===");
-	                System.out.println(json);
-	                System.out.println("=====================================");
-	                
-	                return new ObjectMapper().readValue(json, BuscaPorTermoDTO.class);
-	            } catch (Exception e) {
-	                throw new RuntimeException("Erro ao mapear JSON da Steam", e);
-	            }
-	        });
+		steamSearchCounter.increment();
+		Timer.Sample sample = Timer.start(meterRegistry);
+		return this.webClient.get()
+			.uri(uri -> uri.path("/storesearch/")
+						   .queryParam("term", termo)
+						   .queryParam("l", "portuguese")
+						   .queryParam("cc", "BR")
+						   .build())
+			.retrieve()
+			.bodyToMono(String.class)
+			.map(json -> {
+				try {
+					System.out.println("=== RESPOSTA BRUTA DA STEAM API ===");
+					System.out.println(json);
+					System.out.println("=====================================");
+
+					return new ObjectMapper().readValue(json, BuscaPorTermoDTO.class);
+				} catch (Exception e) {
+					throw new RuntimeException("Erro ao mapear JSON da Steam", e);
+				}
+			})
+			.doOnTerminate(() -> sample.stop(steamApiTimer));
 	}
 
 	/**
@@ -78,5 +99,4 @@ public class SteamClient {
 				}
 			});
 	}
-	}
-
+}
