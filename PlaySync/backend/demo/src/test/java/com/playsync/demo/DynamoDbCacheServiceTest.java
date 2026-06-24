@@ -7,6 +7,9 @@ import com.playsync.demo.dtoresponse.PrecoDeItensDTO;
 import com.playsync.demo.model.PlaySyncCacheItem;
 import com.playsync.demo.service.DynamoDbCacheService;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -51,11 +54,16 @@ class DynamoDbCacheServiceTest {
     @Mock
     private PageIterable<PlaySyncCacheItem> pageIterable;
 
+    private MeterRegistry meterRegistry;
     private DynamoDbCacheService service;
 
     @BeforeEach
-    void setUp() {
-        service = new DynamoDbCacheService(enhancedClient, steamClient);
+    void setUp() throws Exception {
+        meterRegistry = new SimpleMeterRegistry();
+        service = new DynamoDbCacheService(enhancedClient, steamClient, meterRegistry);
+        var initMetrics = DynamoDbCacheService.class.getDeclaredMethod("initMetrics");
+        initMetrics.setAccessible(true);
+        initMetrics.invoke(service);
         when(enhancedClient.table(anyString(), any(TableSchema.class))).thenReturn(table);
     }
 
