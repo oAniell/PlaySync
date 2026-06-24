@@ -14,6 +14,7 @@ import com.playsync.demo.client.SteamClient;
 import com.playsync.demo.dtoresponse.BuscaPorTermoDTO;
 import com.playsync.demo.service.ApiSteam;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -24,22 +25,24 @@ public class BuscaPorTermoController {
 
 	private final ApiSteam api;
 	private final SteamClient steamClient;
+	private final MeterRegistry meterRegistry;
 
 	@PostMapping("/search")
 	public BuscaPorTermoDTO buscar(@RequestParam String termo) {
+		meterRegistry.counter("playsync.requests.total", "endpoint", "search").increment();
 		long startTotal = System.currentTimeMillis();
 		System.out.println("[BUSCA] Recebida requisicao de busca para termo: " + termo);
-		
+
 		long startBusca = System.currentTimeMillis();
 		BuscaPorTermoDTO result = this.api.buscaPorTermo(termo);
 		long endBusca = System.currentTimeMillis();
-		
+
 		System.out.println("[BUSCA] Tempo api.buscaPorTermo(): " + (endBusca - startBusca) + "ms");
 		System.out.println("[BUSCA] Quantidade de itens: " + (result.getItens() != null ? result.getItens().size() : 0));
-		
+
 		long endTotal = System.currentTimeMillis();
 		System.out.println("[BUSCA] Tempo TOTAL da requisicao: " + (endTotal - startTotal) + "ms");
-		
+
 		return result;
 	}
 
@@ -49,6 +52,7 @@ public class BuscaPorTermoController {
 	 */
 	@GetMapping("/steam/{appId}/screenshots")
 	public List<String> getSteamScreenshots(@PathVariable Integer appId) {
+		meterRegistry.counter("playsync.requests.total", "endpoint", "steam_screenshots").increment();
 		return steamClient.getScreenshots(appId).block();
 	}
 }

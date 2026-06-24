@@ -14,6 +14,7 @@ import com.playsync.demo.dtoresponse.ItensFiltradosPeloTermoDTO;
 import com.playsync.demo.dtoresponse.RawgGameEnrichDTO;
 import com.playsync.demo.service.RawgService;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -23,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 public class RawgController {
 
 	private final RawgService rawgService;
+	private final MeterRegistry meterRegistry;
 
 	/**
 	 * Endpoint combinado: retorna featured + trending sem duplicatas
@@ -31,6 +33,7 @@ public class RawgController {
 	@GetMapping("/home")
 	public HomeResponseDTO getHome(
 			@RequestParam(defaultValue = "10") int trendingLimit) {
+		meterRegistry.counter("playsync.requests.total", "endpoint", "home").increment();
 		return rawgService.getHomeData(trendingLimit).block();
 	}
 
@@ -40,6 +43,7 @@ public class RawgController {
 	 */
 	@GetMapping("/featured")
 	public ItensFiltradosPeloTermoDTO getFeatured() {
+		meterRegistry.counter("playsync.requests.total", "endpoint", "featured").increment();
 		return rawgService.getFeaturedGame().block();
 	}
 
@@ -50,6 +54,7 @@ public class RawgController {
 	@GetMapping("/trending")
 	public List<ItensFiltradosPeloTermoDTO> getTrending(
 			@RequestParam(defaultValue = "10") int limit) {
+		meterRegistry.counter("playsync.requests.total", "endpoint", "trending").increment();
 		return rawgService.getTrendingGames(limit).block();
 	}
 
@@ -60,6 +65,7 @@ public class RawgController {
 	 */
 	@GetMapping("/games/{rawgId}/screenshots")
 	public List<String> getGameScreenshots(@PathVariable Long rawgId) {
+		meterRegistry.counter("playsync.requests.total", "endpoint", "game_screenshots").increment();
 		return rawgService.getGameScreenshots(rawgId).block();
 	}
 
@@ -70,6 +76,7 @@ public class RawgController {
 	 */
 	@GetMapping("/games/enrich")
 	public RawgGameEnrichDTO enrichByName(@RequestParam String name) {
+		meterRegistry.counter("playsync.requests.total", "endpoint", "game_enrich").increment();
 		return rawgService.enrichByName(name).block();
 	}
 }

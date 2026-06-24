@@ -18,6 +18,9 @@ import com.playsync.demo.dtoresponse.ItensFiltradosPeloTermoDTO;
 import com.playsync.demo.dtoresponse.PrecoDeItensDTO;
 import com.playsync.demo.model.PlaySyncCacheItem;
 
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
@@ -36,10 +39,24 @@ public class DynamoDbCacheService {
 
     private final DynamoDbEnhancedClient enhancedClient;
     private final SteamClient steamClient;
+    private final MeterRegistry meterRegistry;
+
+    private Counter cacheHitCounter;
+    private Counter cacheMissCounter;
 
     private static final String TABLE_NAME = "playsync-cache";
     private static final long TTL_SECONDS = 21_600L;
     private static final String SK_META = "#meta";
+
+    @PostConstruct
+    private void initMetrics() {
+        cacheHitCounter = Counter.builder("playsync.cache.hits.total")
+                .description("Total de cache hits no DynamoDB")
+                .register(meterRegistry);
+        cacheMissCounter = Counter.builder("playsync.cache.misses.total")
+                .description("Total de cache misses no DynamoDB (busca nova ou cache expirado)")
+                .register(meterRegistry);
+    }
 
     private DynamoDbTable<PlaySyncCacheItem> getTable() {
         return enhancedClient.table(TABLE_NAME, TableSchema.fromBean(PlaySyncCacheItem.class));
@@ -112,10 +129,12 @@ public class DynamoDbCacheService {
     }
 
     public BuscaPorTermoDTO buscarPorTermo(String termo) {
+        meterRegistry.counter("playsync.game.searches.total", "term", termo.toLowerCase().trim()).increment();
+
         List<PlaySyncCacheItem> itens = queryTermo(termo);
 
         if (itens.isEmpty()) {
-            // Cache miss
+            cacheMissCounter.increment();
             BuscaPorTermoDTO buscaDto = steamClient.buscarPorTermo(termo).block();
             if (buscaDto == null || buscaDto.getItens() == null || buscaDto.getItens().isEmpty()) {
                 throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Conteúdo não encontrado");
@@ -139,6 +158,7 @@ public class DynamoDbCacheService {
 
         // Cache hit
         if (LocalDateTime.parse(itens.get(0).getDataPesquisa()).isAfter(LocalDateTime.now().minusHours(6))) {
+            cacheHitCounter.increment();
             List<ItensFiltradosPeloTermoDTO> jogos = itens.stream()
                     .map(this::fromItem)
                     .collect(Collectors.toList());
@@ -150,6 +170,7 @@ public class DynamoDbCacheService {
         }
 
         // Expirado — atualiza
+        cacheMissCounter.increment();
         BuscaPorTermoDTO buscaDto = steamClient.buscarPorTermo(termo).block();
         if (buscaDto == null || buscaDto.getItens() == null || buscaDto.getItens().isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Conteúdo não encontrado");
